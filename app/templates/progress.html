@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Progress Summary{% endblock %}
+{% block content %}
+<h1 class="mb-4">Your Progress</h1>
+
+<div class="card p-4 shadow-sm mb-4">
+  <p><strong>TDEE Estimate:</strong> {{ tdee }} kcal/day</p>
+  <p><strong>Total Workouts Logged:</strong> {{ workouts|length }}</p>
+  <p><strong>Total Meals Logged:</strong> {{ meals|length }}</p>
+</div>
+
+{% if avg_macros %}
+<div class="card p-4 shadow-sm mb-4">
+  <h4>Average Meal Macros</h4>
+  <ul class="mb-0">
+    <li>Calories: {{ avg_macros.calories }}</li>
+    <li>Protein: {{ avg_macros.protein }}g</li>
+    <li>Carbs: {{ avg_macros.carbs }}g</li>
+    <li>Fats: {{ avg_macros.fats }}g</li>
+  </ul>
+</div>
+{% else %}
+<p class="text-muted">No meals logged yet to summarize.</p>
+{% endif %}
+
+{% if total_protein + total_carbs + total_fats > 0 %}
+<div class="card p-4 shadow-sm mb-4">
+  <h4>Macro Ratio (Total)</h4>
+  <div style="max-width: 400px; margin: 0 auto;">
+    <canvas id="macroChart"></canvas>
+  </div>
+</div>
+{% endif %}
+
+<div class="card p-4 shadow-sm mb-4">
+  <h4>Weight History</h4>
+  {% if weight_logs %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Weight (lbs)</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in weight_logs %}
+          <tr>
+            <td>{{ log.date.strftime('%b %d, %Y') }}</td>
+            <td>{{ log.weight }}</td>
+            <td>
+              {% if weight_logs|length > 1 %}
+                <form action="{{ url_for('delete_weight', log_id=log.id) }}" method="post" class="confirm-delete-form d-inline">
+                  <div class="delete-btn-wrapper btn-group btn-group-sm w-100" role="group">
+                    <button type="button" class="btn btn-outline-danger delete-toggle w-100">Delete</button>
+                    <button type="submit" class="btn btn-danger confirm-delete w-100 d-none">Confirm?</button>
+                  </div>
+                </form>
+              {% else %}
+                <button class="btn btn-outline-secondary btn-sm w-100" disabled>Only Entry</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">No weight logs yet.</p>
+  {% endif %}
+  <a class="btn btn-outline-primary mt-3" href="{{ url_for('log_weight', username=user.username) }}">Log New Weight</a>
+</div>
+
+{% if weight_logs %}
+<div class="card p-4 shadow-sm mb-4">
+  <h4>Weight Trend</h4>
+  <div style="max-width: 600px; margin: 0 auto;">
+    <canvas id="weightChart"></canvas>
+  </div>
+</div>
+{% endif %}
+
+<a class="btn btn-outline-secondary" href="{{ url_for('user_dashboard', username=user.username) }}">Back to Dashboard</a>
+
+{% if total_protein + total_carbs + total_fats > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById("macroChart").getContext("2d");
+  new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: ["Protein", "Carbs", "Fats"],
+      datasets: [{
+        label: "Macros",
+        data: [{{ total_protein }}, {{ total_carbs }}, {{ total_fats }}],
+        backgroundColor: ["#66b3ff", "#99ff99", "#ffcc99"]
+      }]
+    },
+    options: {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const value = context.raw;
+              const percent = ((value / total) * 100).toFixed(1);
+              return `${context.label}: ${value}g (${percent}%)`;
+            }
+          }
+        },
+        legend: {
+          position: "bottom"
+        }
+      }
+    }
+  });
+</script>
+{% endif %}
+
+{% if weight_logs %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const wtx = document.getElementById("weightChart").getContext("2d");
+  new Chart(wtx, {
+    type: "line",
+    data: {
+      labels: {{ weight_labels|tojson }},
+      datasets: [{
+        label: "Weight (lbs)",
+        data: {{ weight_values|tojson }},
+        fill: false,
+        borderColor: "#4285f4",
+        tension: 0.2
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: false,
+          title: { display: true, text: "Weight (lbs)" }
+        },
+        x: {
+          title: { display: true, text: "Date" }
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+</script>
+
+<script>
+  document.querySelectorAll('.confirm-delete-form').forEach(form => {
+    const toggleBtn = form.querySelector('.delete-toggle');
+    const confirmBtn = form.querySelector('.confirm-delete');
+
+    let timeout;
+
+    toggleBtn.addEventListener('click', () => {
+      toggleBtn.classList.add('d-none');
+      confirmBtn.classList.remove('d-none');
+
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        toggleBtn.classList.remove('d-none');
+        confirmBtn.classList.add('d-none');
+      }, 5000);
+    });
+  });
+</script>
+
+<style>
+  .delete-btn-wrapper {
+    min-width: 100px;
+    transition: all 0.2s ease;
+  }
+
+  .confirm-delete {
+    white-space: nowrap;
+  }
+
+  .delete-toggle,
+  .confirm-delete {
+    transition: opacity 0.2s ease;
+  }
+</style>
+
+{% endif %}
+{% endblock %}

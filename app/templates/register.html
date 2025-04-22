@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<h1 class="mb-4">Create an Account</h1>
+
+<form method="POST" novalidate autocomplete="off" class="card p-4 shadow-sm">
+  {{ form.hidden_tag() }}
+
+  {% for field in [form.username, form.name, form.email, form.password, form.confirm, form.age, form.height, form.weight, form.fitness_goal] %}
+    <div class="mb-3">
+      {{ field.label(class="form-label") }}
+      {{ field(class="form-control", autocomplete="off") }}
+      {% for error in field.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+
+  <button type="submit" class="btn btn-success">Register</button>
+</form>
+
+<div class="mt-4">
+  <a class="btn btn-outline-secondary" href="{{ url_for('home') }}">Back to Home</a>
+</div>
+{% endblock %}

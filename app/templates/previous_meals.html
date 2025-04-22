@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Previous Meals{% endblock %}
+{% block content %}
+
+<h1 class="mb-4">Previous Meals</h1>
+
+{% if meals %}
+  <div class="card p-4 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Calories</th>
+            <th>Protein (g)</th>
+            <th>Carbs (g)</th>
+            <th>Fats (g)</th>
+            <th>Use Again</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for meal in meals %}
+          <tr>
+            <td>{{ meal.name }}</td>
+            <td>{{ meal.calories }}</td>
+            <td>{{ meal.protein }}</td>
+            <td>{{ meal.carbs }}</td>
+            <td>{{ meal.fats }}</td>
+            <td>
+              <form action="{{ url_for('reuse_meal', meal_id=meal.id) }}" method="get">
+                <button class="btn btn-sm btn-outline-primary" type="submit">Use Again</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <p class="text-muted">No meals logged yet.</p>
+{% endif %}
+
+<a class="btn btn-outline-secondary mt-4" href="{{ url_for('log_meal', username=user.username) }}">Log a Meal</a>
+
+{% endblock %}

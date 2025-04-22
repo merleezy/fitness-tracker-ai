@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Log Meal{% endblock %}
+{% block content %}
+<h1 class="mb-4">Log a Meal for {{ user.name }}</h1>
+
+<form method="POST" novalidate class="card p-4 shadow-sm">
+  {{ form.hidden_tag() }}
+
+  <div class="mb-3">
+    {{ form.name.label(class="form-label") }}
+    {{ form.name(class="form-control", id="food-name", list="food-suggestions", autocomplete="off", oninput="autoSuggest()") }}
+    <datalist id="food-suggestions"></datalist>
+    <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="searchFood()">Search</button>
+    <small id="search-status" class="form-text text-muted"></small>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label for="amount" class="form-label">Amount</label>
+      <input type="number" id="amount" name="amount" value="100" class="form-control" oninput="scaleNutrition()">
+    </div>
+    <div class="col-md-6 mb-3">
+      <label for="unit" class="form-label">Unit</label>
+      <select id="unit" name="unit" class="form-select" onchange="scaleNutrition()">
+        <option value="grams" selected>grams (g)</option>
+        <option value="ounces">ounces (oz)</option>
+        <option value="pounds">pounds (lb)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.calories.label(class="form-label") }}
+    {{ form.calories(id="calories", class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.protein.label(class="form-label") }}
+    {{ form.protein(id="protein", class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.carbs.label(class="form-label") }}
+    {{ form.carbs(id="carbs", class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.fats.label(class="form-label") }}
+    {{ form.fats(id="fats", class="form-control") }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save Meal</button>
+</form>
+
+<div class="mt-4">
+  <a class="btn btn-outline-secondary" href="{{ url_for('user_dashboard', username=user.username) }}">Back to Dashboard</a>
+</div>
+
+<script>
+  function searchFood() {
+    const query = document.getElementById("food-name").value;
+    const status = document.getElementById("search-status");
+
+    if (!query.trim()) {
+      status.textContent = "Please enter a food name.";
+      return;
+    }
+
+    status.textContent = "Searching...";
+    fetch("/search_food", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        status.textContent = data.error;
+      } else {
+        window.lastFoodData = data;
+        document.getElementById("amount").value = 100;
+        scaleNutrition();
+        document.getElementById("food-name").value = data.name;
+        document.getElementById("calories").value = round(data.calories);
+        document.getElementById("protein").value = round(data.protein, 1);
+        document.getElementById("carbs").value = round(data.carbs, 1);
+        document.getElementById("fats").value = round(data.fat, 1);
+        status.textContent = `Auto-filled macros for: ${data.name}`;
+      }
+    })
+    .catch(() => {
+      status.textContent = "Error retrieving food data.";
+    });
+  }
+
+  function scaleNutrition() {
+    if (!window.lastFoodData) return;
+
+    const amountField = document.getElementById("amount");
+    const unit = document.getElementById("unit").value;
+    const amount = parseFloat(amountField.value);
+
+    if (isNaN(amount)) return;
+
+    const grams = toGrams(amount, unit);
+    const factor = grams / 100.0;
+
+    document.getElementById("calories").value = round(window.lastFoodData.calories * factor);
+    document.getElementById("protein").value = round(window.lastFoodData.protein * factor, 1);
+    document.getElementById("carbs").value = round(window.lastFoodData.carbs * factor, 1);
+    document.getElementById("fats").value = round(window.lastFoodData.fat * factor, 1);
+  }
+
+
+  function autoSuggest() {
+    const input = document.getElementById("food-name");
+    const list = document.getElementById("food-suggestions");
+
+    fetch(`/autocomplete_food?q=${encodeURIComponent(input.value)}`)
+      .then(res => res.json())
+      .then(data => {
+        list.innerHTML = "";
+        data.forEach(item => {
+          const option = document.createElement("option");
+          option.value = item.label;
+          option.setAttribute("data-calories", item.value.calories);
+          option.setAttribute("data-protein", item.value.protein);
+          option.setAttribute("data-carbs", item.value.carbs);
+          option.setAttribute("data-fat", item.value.fat);
+          list.appendChild(option);
+        });
+      });
+  }
+
+  function toGrams(amount, unit) {
+    if (unit === "ounces") return amount * 28.3495;
+    if (unit === "pounds") return amount * 453.592;
+    return amount;
+  }
+
+  function fromGrams(grams, unit) {
+    if (unit === "ounces") return grams / 28.3495;
+    if (unit === "pounds") return grams / 453.592;
+    return grams;
+  }
+
+  function round(num, digits = 0) {
+    return +(Math.round(num + `e+${digits}`) + `e-${digits}`);
+  }
+</script>
+{% endblock %}

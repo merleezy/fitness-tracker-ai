@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+  {% if session.get('user_id') %}
+    <div class="text-center mt-5">
+      <h1 class="mb-4">Welcome back, {{ session.get('username') }}!</h1>
+      <div class="d-grid gap-3 col-md-6 mx-auto">
+        <a href="{{ url_for('user_dashboard', username=session['username']) }}" class="btn btn-primary btn-lg">Go to Dashboard</a>
+        <a href="{{ url_for('log_workout', username=session['username']) }}" class="btn btn-outline-primary">Log a Workout</a>
+        <a href="{{ url_for('log_meal', username=session['username']) }}" class="btn btn-outline-primary">Log a Meal</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
+      </div>
+    </div>
+  {% else %}
+    <div class="text-center mt-5">
+      <h1 class="mb-4">Welcome to the Fitness Tracker</h1>
+      <p class="lead">Track your meals, workouts, and progress — and get AI-powered recommendations tailored to your goals.</p>
+      <div class="mt-4">
+        <a href="{{ url_for('register') }}" class="btn btn-success btn-lg me-3">Get Started</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg">Log In</a>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Recommendation History{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">AI Recommendation History</h1>
+
+{% if recommendations %}
+  <div class="card p-4 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Meal</th>
+            <th>Workout</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in recommendations %}
+          <tr>
+            <td>{{ rec.timestamp.strftime('%b %d, %Y %I:%M %p') }}</td>
+            <td>{{ rec.meal_rec }}</td>
+            <td>{{ rec.workout_rec }}</td>
+            <td>{{ rec.followed if rec.followed else "Not marked" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-secondary text-center">No past recommendations yet.</div>
+{% endif %}
+
+<a class="btn btn-outline-secondary mt-4" href="{{ url_for('user_dashboard', username=user.username) }}">Back to Dashboard</a>
+{% endblock %}

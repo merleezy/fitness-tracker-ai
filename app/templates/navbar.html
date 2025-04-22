@@ -1,0 +1,16 @@
+<nav>
+  {% if session.get('user_id') %}
+    <a href="{{ url_for('user_dashboard', username=session['username']) }}">Dashboard</a> |
+    <a href="{{ url_for('progress', username=session['username']) }}">Progress</a> |
+    <a href="{{ url_for('log_workout', username=session['username']) }}">Log Workout</a> |
+    <a href="{{ url_for('log_meal', username=session['username']) }}">Log Meal</a> |
+    <a href="{{ url_for('previous_meals', username=session['username']) }}">Previous Meals</a> |
+    <a href="{{ url_for('edit_profile', username=session['username']) }}">Edit Profile</a> |
+    <a href="{{ url_for('logout') }}">Logout</a>
+  {% else %}
+    <a href="{{ url_for('home') }}">Home</a> |
+    <a href="{{ url_for('login') }}">Login</a> |
+    <a href="{{ url_for('register') }}">Register</a>
+  {% endif %}
+</nav>
+<hr>

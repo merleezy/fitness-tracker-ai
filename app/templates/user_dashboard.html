@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<h1 class="mb-4">Welcome, {{ user.name }}!</h1>
+
+<div class="row g-4">
+  <!-- User Info Card -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">Your Info</div>
+      <div class="card-body">
+        <p><strong>Age:</strong> {{ user.age }}</p>
+        <p><strong>Weight:</strong> {{ user.weight }} lbs</p>
+        <p><strong>Height:</strong> {{ user.height }} in</p>
+        <p><strong>Goal:</strong> {{ user.fitness_goal.title() }}</p>
+        <a href="{{ url_for('edit_profile', username=user.username) }}" class="btn btn-sm btn-outline-primary">Edit Profile</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Recommendation Card -->
+  <div class="col-md-8">
+    <div class="card border-success shadow-sm">
+      <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <span>AI Recommendation</span>
+        {% if recommendation %}
+          <span class="badge bg-light text-dark">Status: {% if recommendation.followed %}<strong>{{ recommendation.followed.capitalize() }}</strong>{% else %}<em>Not marked</em>{% endif %}</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if recommendation %}
+          <div class="mb-3">
+            <p class="mb-1"><strong>Meal Recommendation:</strong></p>
+            <p class="ms-3">{{ recommendation.meal_rec }}</p>
+            <p class="mb-1"><strong>Workout Recommendation:</strong></p>
+            <p class="ms-3">{{ recommendation.workout_rec }}</p>
+          </div>
+
+          {% if recommendation.trend_note %}
+            <div class="alert alert-warning">
+              <strong>Note:</strong> {{ recommendation.trend_note }}
+            </div>
+          {% endif %}
+
+          <p class="text-muted small">Generated: {{ recommendation.timestamp.strftime('%b %d, %Y %I:%M:%S %p') }}</p>
+
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <form action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='followed') }}" method="post">
+              <button type="submit" class="btn btn-outline-success btn-sm">Followed</button>
+            </form>
+            <form action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='skipped') }}" method="post">
+              <button type="submit" class="btn btn-outline-danger btn-sm">Skipped</button>
+            </form>
+            <a href="{{ url_for('recommendation_history', username=user.username) }}" class="btn btn-sm btn-outline-info">View Recommendation History</a>
+          </div>
+        {% else %}
+          <p>No recommendations yet.</p>
+        {% endif %}
+
+        <form action="{{ url_for('create_recommendation', username=user.username) }}" method="post">
+          <button type="submit" class="btn btn-outline-success w-100">Generate New Recommendation</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Workout and Meal History -->
+<div class="row g-4 mt-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Recent Workouts</div>
+      <div class="card-body">
+        {% if workouts %}
+          <ul class="list-group">
+            {% for w in workouts[:5] %}
+              <li class="list-group-item">{{ w.type }} - {{ w.duration }} min - {{ w.calories_burned }} cal</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No workouts logged yet.</p>
+        {% endif %}
+        <a href="{{ url_for('log_workout', username=user.username) }}" class="btn btn-sm btn-outline-primary mt-3">Log Workout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Recent Meals</div>
+      <div class="card-body">
+        {% if meals %}
+          <ul class="list-group">
+            {% for m in meals[:5] %}
+              <li class="list-group-item">{{ m.name }} – {{ m.calories }} cal ({{ m.protein }}g protein, {{ m.carbs }}g carbs, {{ m.fats }}g fat)</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No meals logged yet.</p>
+        {% endif %}
+        <a href="{{ url_for('log_meal', username=user.username) }}" class="btn btn-sm btn-outline-primary mt-3">Log Meal</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="mt-4">
+  <a class="btn btn-outline-secondary" href="{{ url_for('progress', username=user.username) }}">View Your Progress Summary</a>
+</p>
+
+{% endblock %}
