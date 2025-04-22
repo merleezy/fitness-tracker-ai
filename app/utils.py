@@ -444,7 +444,7 @@ def generate_recommendation(user):
                 )
 
     # === Filter Out Last 3 Recommendations ===
-    recent_recs = Recommendation.query.filter_by(user_id=user.id).order_by(Recommendation.timestamp.desc()).limit(10).all()
+    recent_recs = Recommendation.query.filter_by(user_id=user.id).order_by(Recommendation.timestamp.desc()).limit(3).all()
     recent_meals = {r.meal_rec for r in recent_recs}
     recent_workouts = {r.workout_rec for r in recent_recs}
 
