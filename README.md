@@ -1,8 +1,7 @@
 # Fitness Tracker with Personalized Meal & Workout AI
 
-A full-stack fitness tracking application built with Flask and SQLite. Users can register, log in, track workouts, and receive personalized AI-based meal and workout recommendations. Designed for extensibility, clean code, and real-world deployment.
+A full-stack fitness tracking application built with Flask and SQLite. Users can register, log in, track workouts, and receive personalized AI-based meal and workout recommendations. 
 
----
 
 ## Features
 
