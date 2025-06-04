@@ -10,7 +10,6 @@ A full-stack fitness tracking application built with Flask and SQLite. Users can
 - Forms to log workouts (meal logging and AI recommendation engine planned)
 - SQLite for local development (PostgreSQL-compatible)
 - Modular Flask structure with templating, form validation, and routing
-- Designed for future integration with wearable APIs (Fitbit, Apple HealthKit)
 - Virtual environment + requirements management
 
 ##  Getting Started
