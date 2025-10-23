@@ -6,8 +6,10 @@ A full-stack fitness tracking application built with Flask and SQLite. Users can
 ## Features
 
 - User registration & login (Flask-WTF + hashed passwords)
-- Personal user dashboards with real-time workout tracking
-- Forms to log workouts (meal logging and AI recommendation engine planned)
+- Personal dashboards that surface logged workouts, meals, and the latest AI guidance
+- Meal logging with macro tracking, USDA food lookup/autocomplete, and one-click reuse of previous meals
+- AI-generated meal & workout recommendations with history and follow/skip feedback tracking
+- Workout logging with recent history and progress charts alongside weight trend analysis
 - SQLite for local development (PostgreSQL-compatible)
 - Modular Flask structure with templating, form validation, and routing
 - Virtual environment + requirements management
