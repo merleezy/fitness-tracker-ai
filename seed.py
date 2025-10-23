@@ -11,7 +11,7 @@ with app.app_context():
         User(username="isaac", name="Isaac", email="isaac@example.com", age=22, weight=218, height=75, fitness_goal="cutting"),
         User(username="emma", name="Emma", email="emma@example.com", age=28, weight=147.5, height=65, fitness_goal="lean muscle"),
         User(username="alex", name="Alex", email="alex@example.com", age=30, weight=180, height=70, fitness_goal="endurance"),
-        User(username="maria", name="Maria", email="maria@example.com", age=26, weight=160, height=66, fitness_goal="balances"),
+        User(username="maria", name="Maria", email="maria@example.com", age=26, weight=160, height=66, fitness_goal="balanced"),
         User(username="jake", name="Jake", email="jake@example.com", age=32, weight=198, height=72, fitness_goal="lean muscle"),
     ]
 
