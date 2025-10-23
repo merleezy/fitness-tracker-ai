@@ -126,6 +126,11 @@ def logout():
 @login_required
 def log_meal(username):
     user = User.query.filter_by(username=username).first_or_404()
+
+    if session['user_id'] != user.id:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('user_dashboard', username=session['username']))
+
     form = MealForm()
 
     if request.method == 'GET' and 'prefill' in session:
