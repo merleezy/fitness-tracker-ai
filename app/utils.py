@@ -507,7 +507,7 @@ def generate_recommendation(user):
                 "Grilled Cod or Tilapia with Steamed Broccoli & Cauliflower Mash",
             ]
             trend_note += (
-                " Your average calorie intake is above your estimated needs. "
+                "Your average calorie intake is above your estimated needs."
                 "Try lighter, lower-carb meals to stay in a deficit."
             )
 
