@@ -2,8 +2,6 @@
 
 A full-stack fitness tracking application built with Flask and SQLite. Users can register, log in, track workouts, and receive personalized meal and workout recommendations based on biometric algorithms.
 
-![Smart Fitness Tracker Demo](docs/demo.gif)
-
 ## Features
 
 - **Secure Authentication:** User registration & login implementing Flask-WTF protection and secure password hashing.
@@ -18,7 +16,7 @@ A full-stack fitness tracking application built with Flask and SQLite. Users can
 ### 1. Clone the repository
 
 ```bash
-git clone [https://github.com/merleezy/smart-fitness-tracker](https://github.com/merleezy/smart-fitness-tracker)
+git clone https://github.com/merleezy/smart-fitness-tracker
 cd smart-fitness-tracker
 ```
 
