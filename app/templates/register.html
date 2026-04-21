@@ -130,12 +130,20 @@
 
     const pw = form.querySelector('#password');
     const cn = form.querySelector('#confirm');
+    const tooShort = pw && pw.value.length > 0 && pw.value.length < 8;
     const mismatch = pw && cn && pw.value && cn.value && pw.value !== cn.value;
+    if (tooShort) pw.classList.add("is-invalid");
+    else if (pw) pw.classList.remove("is-invalid");
     if (mismatch) cn.classList.add("is-invalid");
     else if (cn) cn.classList.remove("is-invalid");
 
     if (missing.length > 0) {
       errorBox.textContent = `Please fill in: ${missing.join(", ")}`;
+      errorBox.classList.remove("d-none");
+      return;
+    }
+    if (tooShort) {
+      errorBox.textContent = "Password must be at least 8 characters.";
       errorBox.classList.remove("d-none");
       return;
     }
