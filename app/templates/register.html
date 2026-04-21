@@ -119,7 +119,7 @@
     let missing = [];
 
     Object.keys(fieldLabels).forEach(fieldName => {
-      const el = form.querySelector(`input[name="${fieldName}"]`);
+      const el = form.querySelector(`#${fieldName}`);
       if (!el || !el.value.trim()) {
         if (el) el.classList.add("is-invalid");
         missing.push(fieldLabels[fieldName]);
@@ -128,8 +128,8 @@
       }
     });
 
-    const pw = form.querySelector('input[name="password"]');
-    const cn = form.querySelector('input[name="confirm"]');
+    const pw = form.querySelector('#password');
+    const cn = form.querySelector('#confirm');
     const mismatch = pw && cn && pw.value.trim() && cn.value.trim() && pw.value !== cn.value;
     if (mismatch) cn.classList.add("is-invalid");
 
