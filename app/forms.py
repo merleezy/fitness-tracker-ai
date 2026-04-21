@@ -77,7 +77,17 @@ class LoginForm(FlaskForm):
 
 
 class MealForm(FlaskForm):
-    name = StringField("Meal Name", validators=[InputRequired()])
+    meal_type = SelectField(
+        "Meal Type",
+        choices=[
+            ("Breakfast", "Breakfast"),
+            ("Lunch", "Lunch"),
+            ("Dinner", "Dinner"),
+            ("Snack", "Snack"),
+        ],
+        validators=[DataRequired()],
+    )
+    name = StringField("Food / Item", validators=[InputRequired()])
     calories = FloatField("Calories", validators=[InputRequired()])
     protein = FloatField("Protein", validators=[InputRequired()])
     carbs = FloatField("Carbs", validators=[InputRequired()])

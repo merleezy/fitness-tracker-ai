@@ -7,6 +7,11 @@
   {{ form.hidden_tag() }}
 
   <div class="mb-3">
+    {{ form.meal_type.label(class="form-label") }}
+    {{ form.meal_type(class="form-select") }}
+  </div>
+
+  <div class="mb-3">
     {{ form.name.label(class="form-label") }}
     {{ form.name(class="form-control", id="food-name", list="food-suggestions", autocomplete="off", oninput="autoSuggest()") }}
     <datalist id="food-suggestions"></datalist>

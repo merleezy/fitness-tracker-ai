@@ -30,6 +30,13 @@ block content %}
 {% endif %}
 
 <div class="card p-4 shadow-sm mb-4">
+  <h4>Daily Calories <small class="text-muted fs-6">(last 7 days)</small></h4>
+  <div style="max-width: 700px; margin: 0 auto">
+    <canvas id="calorieChart"></canvas>
+  </div>
+</div>
+
+<div class="card p-4 shadow-sm mb-4">
   <h4>Weight History</h4>
   {% if weight_logs %}
   <div class="table-responsive">
@@ -103,8 +110,52 @@ block content %}
   >Back to Dashboard</a
 >
 
-{% if total_protein + total_carbs + total_fats > 0 %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const calCtx = document.getElementById("calorieChart").getContext("2d");
+  new Chart(calCtx, {
+    type: "bar",
+    data: {
+      labels: {{ calorie_labels|tojson }},
+      datasets: [
+        {
+          label: "Calories Consumed",
+          data: {{ calorie_values|tojson }},
+          backgroundColor: "rgba(66, 133, 244, 0.6)",
+          borderColor: "#4285f4",
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          type: "line",
+          label: "TDEE Target",
+          data: Array({{ calorie_labels|length }}).fill({{ tdee }}),
+          borderColor: "#e8710a",
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "Calories (kcal)" }
+        },
+        x: {
+          title: { display: true, text: "Date" }
+        }
+      },
+      plugins: {
+        legend: { display: true, position: "bottom" }
+      }
+    }
+  });
+</script>
+
+{% if total_protein + total_carbs + total_fats > 0 %}
 <script>
   const ctx = document.getElementById("macroChart").getContext("2d");
   new Chart(ctx, {
@@ -137,7 +188,6 @@ block content %}
   });
 </script>
 {% endif %} {% if weight_logs %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const rawWeights = {{ weight_values|tojson }};
   function rollingAvg(data, window) {

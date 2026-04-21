@@ -9,6 +9,7 @@ content %}
     <table class="table table-striped align-middle">
       <thead>
         <tr>
+          <th>Type</th>
           <th>Name</th>
           <th>Calories</th>
           <th>Protein (g)</th>
@@ -20,6 +21,7 @@ content %}
       <tbody>
         {% for meal in meals %}
         <tr>
+          <td><span class="badge bg-secondary">{{ meal.meal_type or 'Snack' }}</span></td>
           <td>{{ meal.name }}</td>
           <td>{{ meal.calories }}</td>
           <td>{{ meal.protein }}</td>

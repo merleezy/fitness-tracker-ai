@@ -131,7 +131,7 @@ content %}
             </div>
             <div class="progress mt-1" style="height: 8px;">
               {% set pct = [[((daily_summary.protein / protein_target) * 100) | int, 100] | min, 0] | max if protein_target > 0 else 0 %}
-              <div class="progress-bar bg-info" style="width: {{ pct }}%"></div>
+              <div class="progress-bar" style="width: {{ pct }}%; background-color: #66b3ff;"></div>
             </div>
           </div>
           <div class="col-md-4">
@@ -141,7 +141,7 @@ content %}
             </div>
             <div class="progress mt-1" style="height: 8px;">
               {% set pct = [[((daily_summary.carbs / carbs_target) * 100) | int, 100] | min, 0] | max if carbs_target > 0 else 0 %}
-              <div class="progress-bar bg-warning" style="width: {{ pct }}%"></div>
+              <div class="progress-bar" style="width: {{ pct }}%; background-color: #99ff99;"></div>
             </div>
           </div>
           <div class="col-md-4">
@@ -151,7 +151,7 @@ content %}
             </div>
             <div class="progress mt-1" style="height: 8px;">
               {% set pct = [[((daily_summary.fats / fats_target) * 100) | int, 100] | min, 0] | max if fats_target > 0 else 0 %}
-              <div class="progress-bar bg-danger" style="width: {{ pct }}%"></div>
+              <div class="progress-bar" style="width: {{ pct }}%; background-color: #ffcc99;"></div>
             </div>
           </div>
         </div>
@@ -196,9 +196,12 @@ content %}
         {% if meals %}
         <ul class="list-group">
           {% for m in meals[:5] %}
-          <li class="list-group-item">
-            {{ m.name }} – {{ m.calories }} cal ({{ m.protein }}g protein, {{
-            m.carbs }}g carbs, {{ m.fats }}g fat)
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+              <span class="badge bg-secondary me-2">{{ m.meal_type or 'Snack' }}</span>
+              {{ m.name }}
+            </span>
+            <small class="text-muted">{{ m.calories | int }} cal</small>
           </li>
           {% endfor %}
         </ul>

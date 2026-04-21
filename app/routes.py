@@ -18,6 +18,7 @@ from app.utils import (
     search_usda_food,
     calculate_progress_stats,
     get_daily_summary,
+    get_daily_calorie_history,
 )
 
 
@@ -182,6 +183,7 @@ def log_meal():
         form.protein.data = pre["protein"]
         form.carbs.data = pre["carbs"]
         form.fats.data = pre["fats"]
+        form.meal_type.data = pre.get("meal_type", "Snack")
         flash(f"Preloaded from: {pre['name']}", "info")
 
     if form.validate_on_submit():
@@ -191,6 +193,7 @@ def log_meal():
             protein=form.protein.data,
             carbs=form.carbs.data,
             fats=form.fats.data,
+            meal_type=form.meal_type.data,
             user_id=current_user.id,
         )
         db.session.add(meal)
@@ -354,6 +357,7 @@ def reuse_meal(meal_id):
         "protein": meal.protein,
         "carbs": meal.carbs,
         "fats": meal.fats,
+        "meal_type": meal.meal_type,
     }
 
     return redirect(url_for("log_meal"))
@@ -379,6 +383,7 @@ def progress():
     avg_macros, total_protein, total_carbs, total_fats = calculate_progress_stats(
         current_user
     )
+    calorie_labels, calorie_values = get_daily_calorie_history(current_user)
 
     return render_template(
         "progress.html",
@@ -393,6 +398,8 @@ def progress():
         weight_logs=weight_logs,
         weight_labels=weight_labels,
         weight_values=weight_values,
+        calorie_labels=calorie_labels,
+        calorie_values=calorie_values,
     )
 
 

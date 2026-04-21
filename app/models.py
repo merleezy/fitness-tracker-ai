@@ -63,6 +63,7 @@ class Meal(db.Model):
     protein = db.Column(db.Float)
     carbs = db.Column(db.Float)
     fats = db.Column(db.Float)
+    meal_type = db.Column(db.String(20), default="Snack")
     date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 

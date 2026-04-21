@@ -194,6 +194,23 @@ def calculate_progress_stats(user):
     return avg_macros, total_protein, total_carbs, total_fats
 
 
+def get_daily_calorie_history(user, days=7):
+    """Returns daily calorie totals for the last N days as (labels, values)."""
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    labels, values = [], []
+    for i in range(days - 1, -1, -1):
+        day_start = today_start - timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        meals = Meal.query.filter(
+            Meal.user_id == user.id,
+            Meal.date >= day_start,
+            Meal.date < day_end,
+        ).all()
+        labels.append(day_start.strftime("%b %d"))
+        values.append(round(sum(m.calories for m in meals), 1))
+    return labels, values
+
+
 def generate_recommendation(user):
     goal = user.fitness_goal
 
