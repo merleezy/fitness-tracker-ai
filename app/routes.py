@@ -116,7 +116,7 @@ def register():
             email=form.email.data,
             age=form.age.data,
             weight=form.weight.data,
-            height=form.height.data,
+            height=form.height_ft.data * 12 + form.height_in.data,
             fitness_goal=form.fitness_goal.data,
         )
         user.set_password(form.password.data)
@@ -208,6 +208,9 @@ def log_meal():
 @login_required
 def edit_profile():
     form = ProfileForm(obj=current_user)
+    if request.method == "GET":
+        form.height_ft.data = int(current_user.height or 0) // 12
+        form.height_in.data = int(current_user.height or 0) % 12
 
     if form.validate_on_submit():
         # Check if username or email is changing to something already used
@@ -238,7 +241,7 @@ def edit_profile():
                 date=datetime.now(timezone.utc),
             )
             db.session.add(log)
-        current_user.height = form.height.data
+        current_user.height = form.height_ft.data * 12 + form.height_in.data
         current_user.fitness_goal = form.fitness_goal.data
 
         # Update password if provided

@@ -1,25 +1,166 @@
 {% extends "base.html" %}
 {% block title %}Register{% endblock %}
 {% block content %}
-<h1 class="mb-4">Create an Account</h1>
 
-<form method="POST" novalidate autocomplete="off" class="card p-4 shadow-sm">
-  {{ form.hidden_tag() }}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="mb-1">Create an Account</h1>
+    <p class="text-muted mb-4">Already have one? <a href="{{ url_for('login') }}">Log in</a></p>
 
-  {% for field in [form.username, form.name, form.email, form.password, form.confirm, form.age, form.height, form.weight, form.fitness_goal] %}
-    <div class="mb-3">
-      {{ field.label(class="form-label") }}
-      {{ field(class="form-control", autocomplete="off") }}
-      {% for error in field.errors %}
-        <div class="text-danger small">{{ error }}</div>
-      {% endfor %}
-    </div>
-  {% endfor %}
+    <form method="POST" novalidate autocomplete="off" id="register-form">
+      {{ form.hidden_tag() }}
 
-  <button type="submit" class="btn btn-success">Register</button>
-</form>
+      <!-- Step 1: Account -->
+      <div id="step-1">
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <span class="fw-semibold">Step 1 of 2</span>
+            <span class="text-muted ms-2">Account Details</span>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              {{ form.name.label(class="form-label") }}
+              {{ form.name(class="form-control", placeholder="Your full name") }}
+              {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.username.label(class="form-label") }}
+              {{ form.username(class="form-control", placeholder="Choose a username") }}
+              {% for e in form.username.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.email.label(class="form-label") }}
+              {{ form.email(class="form-control", placeholder="you@example.com") }}
+              {% for e in form.email.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.password.label(class="form-label") }}
+              {{ form.password(class="form-control") }}
+              {% for e in form.password.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.confirm.label(class="form-label") }}
+              {{ form.confirm(class="form-control") }}
+              {% for e in form.confirm.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">Back</a>
+            <div class="d-flex align-items-center gap-3">
+              <small id="step1-error" class="text-danger d-none"></small>
+              <button type="button" class="btn btn-primary" onclick="goToStep2()">Next &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-<div class="mt-4">
-  <a class="btn btn-outline-secondary" href="{{ url_for('home') }}">Back to Home</a>
+      <!-- Step 2: Fitness Profile -->
+      <div id="step-2" class="d-none">
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <span class="fw-semibold">Step 2 of 2</span>
+            <span class="text-muted ms-2">Fitness Profile</span>
+          </div>
+          <div class="card-body">
+            <p class="text-muted small mb-3">Used to estimate your daily calorie needs and personalise recommendations.</p>
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                {{ form.age.label(class="form-label") }}
+                {{ form.age(class="form-control", placeholder="e.g. 25") }}
+                {% for e in form.age.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+              </div>
+              <div class="col-6">
+                {{ form.weight.label(class="form-label") }}
+                {{ form.weight(class="form-control", placeholder="e.g. 165") }}
+                {% for e in form.weight.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Height</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="input-group">
+                    {{ form.height_ft(class="form-control", placeholder="5") }}
+                    <span class="input-group-text">ft</span>
+                  </div>
+                  {% for e in form.height_ft.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-6">
+                  <div class="input-group">
+                    {{ form.height_in(class="form-control", placeholder="10") }}
+                    <span class="input-group-text">in</span>
+                  </div>
+                  {% for e in form.height_in.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              {{ form.fitness_goal.label(class="form-label") }}
+              {{ form.fitness_goal(class="form-select") }}
+              {% for e in form.fitness_goal.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-outline-secondary" onclick="goToStep1()">&larr; Back</button>
+            {{ form.submit(class="btn btn-success") }}
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
 </div>
+
+<script>
+  function goToStep2() {
+    const errorBox = document.getElementById("step1-error");
+    const form = document.getElementById("register-form");
+    const fieldLabels = { name: "Name", username: "Username", email: "Email", password: "Password", confirm: "Confirm Password" };
+    let missing = [];
+
+    Object.keys(fieldLabels).forEach(fieldName => {
+      const el = form.querySelector(`input[name="${fieldName}"]`);
+      if (!el || !el.value.trim()) {
+        if (el) el.classList.add("is-invalid");
+        missing.push(fieldLabels[fieldName]);
+      } else {
+        if (el) el.classList.remove("is-invalid");
+      }
+    });
+
+    const pw = form.querySelector('input[name="password"]');
+    const cn = form.querySelector('input[name="confirm"]');
+    const mismatch = pw && cn && pw.value.trim() && cn.value.trim() && pw.value !== cn.value;
+    if (mismatch) cn.classList.add("is-invalid");
+
+    if (missing.length > 0) {
+      errorBox.textContent = `Missing: ${missing.join(", ")}`;
+      errorBox.classList.remove("d-none");
+      return;
+    }
+    if (mismatch) {
+      errorBox.textContent = "Passwords do not match.";
+      errorBox.classList.remove("d-none");
+      return;
+    }
+
+    errorBox.classList.add("d-none");
+    document.getElementById("step-1").classList.add("d-none");
+    document.getElementById("step-2").classList.remove("d-none");
+  }
+
+  function goToStep1() {
+    document.getElementById("step-2").classList.add("d-none");
+    document.getElementById("step-1").classList.remove("d-none");
+  }
+
+  // If server returns errors on step-2 fields, jump straight to step 2
+  const step2Fields = ["age", "weight", "height_ft", "height_in", "fitness_goal"];
+  const hasStep2Errors = step2Fields.some(name => {
+    const el = document.querySelector(`[name="${name}"]`);
+    return el && el.closest(".mb-3, .row")?.querySelector(".text-danger");
+  });
+  if (hasStep2Errors) goToStep2();
+</script>
+
 {% endblock %}

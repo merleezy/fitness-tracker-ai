@@ -42,10 +42,11 @@ class UserRegistrationForm(FlaskForm):
         ],
         validators=[DataRequired()],
     )
-    age = IntegerField("Age", validators=[DataRequired()])
-    weight = FloatField("Weight (lbs)", validators=[DataRequired()])
-    height = FloatField("Height (inches)", validators=[DataRequired()])
-    submit = SubmitField("Register")
+    age = IntegerField("Age", validators=[DataRequired(), NumberRange(min=10, max=100)])
+    weight = FloatField("Weight (lbs)", validators=[DataRequired(), NumberRange(min=50, max=700)])
+    height_ft = IntegerField("Height (ft)", validators=[DataRequired(), NumberRange(min=3, max=8)])
+    height_in = IntegerField("Height (in)", validators=[DataRequired(), NumberRange(min=0, max=11)])
+    submit = SubmitField("Create Account")
 
 
 class WorkoutForm(FlaskForm):
@@ -103,13 +104,14 @@ class ProfileForm(FlaskForm):
     confirm = PasswordField(
         "Confirm Password", validators=[Optional(), EqualTo("password")]
     )
-    age = IntegerField("Age", validators=[DataRequired()])
-    weight = FloatField("Weight (lbs)", validators=[DataRequired()])
-    height = FloatField("Height (inches)", validators=[DataRequired()])
+    age = IntegerField("Age", validators=[DataRequired(), NumberRange(min=10, max=100)])
+    weight = FloatField("Weight (lbs)", validators=[DataRequired(), NumberRange(min=50, max=700)])
+    height_ft = IntegerField("Height (ft)", validators=[DataRequired(), NumberRange(min=3, max=8)])
+    height_in = IntegerField("Height (in)", validators=[DataRequired(), NumberRange(min=0, max=11)])
     fitness_goal = SelectField(
         "Fitness Goal", choices=goal_choices, validators=[DataRequired()]
     )
-    submit = SubmitField("Update Profile")
+    submit = SubmitField("Save Changes")
 
 
 class WeightForm(FlaskForm):
