@@ -17,6 +17,7 @@ from app.utils import (
     generate_recommendation,
     search_usda_food,
     calculate_progress_stats,
+    get_daily_summary,
 )
 
 
@@ -57,6 +58,8 @@ def user_dashboard():
         .order_by(Recommendation.timestamp.desc())
         .first()
     )
+    daily_summary = get_daily_summary(user)
+    tdee = estimate_tdee(user)
 
     return render_template(
         "user_dashboard.html",
@@ -64,6 +67,8 @@ def user_dashboard():
         workouts=workouts,
         meals=meals,
         recommendation=recommendation,
+        daily_summary=daily_summary,
+        tdee=tdee,
     )
 
 

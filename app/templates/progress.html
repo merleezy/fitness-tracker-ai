@@ -10,7 +10,7 @@ block content %}
 
 {% if avg_macros %}
 <div class="card p-4 shadow-sm mb-4">
-  <h4>Average Meal Macros</h4>
+  <h4>Average Meal Macros <small class="text-muted fs-6">(last 7 days)</small></h4>
   <ul class="mb-0">
     <li>Calories: {{ avg_macros.calories }}</li>
     <li>Protein: {{ avg_macros.protein }}g</li>
@@ -19,10 +19,10 @@ block content %}
   </ul>
 </div>
 {% else %}
-<p class="text-muted">No meals logged yet to summarize.</p>
+<p class="text-muted">No meals logged in the last 7 days to summarize.</p>
 {% endif %} {% if total_protein + total_carbs + total_fats > 0 %}
 <div class="card p-4 shadow-sm mb-4">
-  <h4>Macro Ratio (Total)</h4>
+  <h4>Macro Ratio <small class="text-muted fs-6">(last 7 days)</small></h4>
   <div style="max-width: 400px; margin: 0 auto">
     <canvas id="macroChart"></canvas>
   </div>
@@ -139,18 +139,41 @@ block content %}
 {% endif %} {% if weight_logs %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  const rawWeights = {{ weight_values|tojson }};
+  function rollingAvg(data, window) {
+    return data.map((_, i) => {
+      const slice = data.slice(Math.max(0, i - window + 1), i + 1);
+      return Math.round((slice.reduce((a, b) => a + b, 0) / slice.length) * 10) / 10;
+    });
+  }
   const wtx = document.getElementById("weightChart").getContext("2d");
   new Chart(wtx, {
     type: "line",
     data: {
       labels: {{ weight_labels|tojson }},
-      datasets: [{
-        label: "Weight (lbs)",
-        data: {{ weight_values|tojson }},
-        fill: false,
-        borderColor: "#4285f4",
-        tension: 0.2
-      }]
+      datasets: [
+        {
+          label: "Weight (lbs)",
+          data: rawWeights,
+          fill: false,
+          borderColor: "#4285f4",
+          backgroundColor: "#4285f4",
+          tension: 0.2,
+          pointRadius: 4,
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+        },
+        {
+          label: "7-Day Avg",
+          data: rollingAvg(rawWeights, 7),
+          fill: false,
+          borderColor: "#e8710a",
+          backgroundColor: "#e8710a",
+          tension: 0.3,
+          pointRadius: 2,
+          borderWidth: 2.5,
+        }
+      ]
     },
     options: {
       scales: {
@@ -163,7 +186,7 @@ block content %}
         }
       },
       plugins: {
-        legend: { display: false }
+        legend: { display: true, position: "bottom" }
       }
     }
   });

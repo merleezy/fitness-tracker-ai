@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone, timedelta
 from random import choice
 from sqlalchemy import func
 from app.models import Meal, Recommendation, WeightLog
@@ -149,9 +150,33 @@ def get_user_feedback_stats(user_id):
     return followed_meals, skipped_meals, followed_workouts, skipped_workouts
 
 
+def get_daily_summary(user):
+    """Returns total calories and macros logged today."""
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+
+    meals = Meal.query.filter(
+        Meal.user_id == user.id,
+        Meal.date >= today_start,
+        Meal.date < today_end,
+    ).all()
+
+    return {
+        "calories": round(sum(m.calories for m in meals), 1),
+        "protein": round(sum(m.protein for m in meals), 1),
+        "carbs": round(sum(m.carbs for m in meals), 1),
+        "fats": round(sum(m.fats for m in meals), 1),
+        "count": len(meals),
+    }
+
+
 def calculate_progress_stats(user):
-    """Calculates macro averages and totals for the progress page."""
-    meals = Meal.query.filter_by(user_id=user.id).all()
+    """Calculates macro averages and totals for the last 7 days."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    meals = Meal.query.filter(
+        Meal.user_id == user.id,
+        Meal.date >= cutoff,
+    ).all()
 
     if not meals:
         return None, 0, 0, 0
@@ -162,9 +187,9 @@ def calculate_progress_stats(user):
         "carbs": round(sum(m.carbs for m in meals) / len(meals), 1),
         "fats": round(sum(m.fats for m in meals) / len(meals), 1),
     }
-    total_protein = sum(m.protein for m in meals)
-    total_carbs = sum(m.carbs for m in meals)
-    total_fats = sum(m.fats for m in meals)
+    total_protein = round(sum(m.protein for m in meals), 1)
+    total_carbs = round(sum(m.carbs for m in meals), 1)
+    total_fats = round(sum(m.fats for m in meals), 1)
 
     return avg_macros, total_protein, total_carbs, total_fats
 

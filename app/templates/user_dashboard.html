@@ -94,6 +94,75 @@ content %}
   </div>
 </div>
 
+<!-- Daily Summary -->
+<div class="row g-4 mt-2">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><strong>Today's Nutrition</strong></span>
+        <small class="text-muted">{{ daily_summary.count }} item{{ 's' if daily_summary.count != 1 else '' }} logged</small>
+      </div>
+      <div class="card-body">
+        {% set cal_pct = [[((daily_summary.calories / tdee) * 100) | int, 100] | min, 0] | max %}
+        {% set cal_over = daily_summary.calories > tdee %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span><strong>Calories</strong></span>
+            <span>
+              {{ daily_summary.calories | int }} / {{ tdee }} kcal
+              {% if cal_over %}
+                <span class="text-danger fw-semibold">(+{{ (daily_summary.calories - tdee) | int }} over)</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar {% if cal_over %}bg-danger{% elif cal_pct > 85 %}bg-warning{% else %}bg-success{% endif %}"
+                 role="progressbar" style="width: {{ cal_pct }}%"></div>
+          </div>
+        </div>
+        <div class="row g-3">
+          {% set protein_target = ((tdee * 0.30) / 4) | int %}
+          {% set carbs_target   = ((tdee * 0.45) / 4) | int %}
+          {% set fats_target    = ((tdee * 0.25) / 9) | int %}
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <small><strong>Protein</strong></small>
+              <small>{{ daily_summary.protein }}g / ~{{ protein_target }}g</small>
+            </div>
+            <div class="progress mt-1" style="height: 8px;">
+              {% set pct = [[((daily_summary.protein / protein_target) * 100) | int, 100] | min, 0] | max if protein_target > 0 else 0 %}
+              <div class="progress-bar bg-info" style="width: {{ pct }}%"></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <small><strong>Carbs</strong></small>
+              <small>{{ daily_summary.carbs }}g / ~{{ carbs_target }}g</small>
+            </div>
+            <div class="progress mt-1" style="height: 8px;">
+              {% set pct = [[((daily_summary.carbs / carbs_target) * 100) | int, 100] | min, 0] | max if carbs_target > 0 else 0 %}
+              <div class="progress-bar bg-warning" style="width: {{ pct }}%"></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <small><strong>Fats</strong></small>
+              <small>{{ daily_summary.fats }}g / ~{{ fats_target }}g</small>
+            </div>
+            <div class="progress mt-1" style="height: 8px;">
+              {% set pct = [[((daily_summary.fats / fats_target) * 100) | int, 100] | min, 0] | max if fats_target > 0 else 0 %}
+              <div class="progress-bar bg-danger" style="width: {{ pct }}%"></div>
+            </div>
+          </div>
+        </div>
+        {% if daily_summary.count == 0 %}
+        <p class="text-muted mt-3 mb-0 small">No meals logged today. <a href="{{ url_for('log_meal') }}">Log your first meal</a></p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Workout and Meal History -->
 <div class="row g-4 mt-4">
   <div class="col-md-6">
