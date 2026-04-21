@@ -11,6 +11,7 @@ from wtforms.validators import (
     DataRequired,
     Email,
     EqualTo,
+    Length,
     NumberRange,
     Optional,
     InputRequired,
@@ -25,12 +26,12 @@ goal_choices = [
 
 
 class UserRegistrationForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired()])
+    username = StringField("Username", validators=[DataRequired(), Length(min=3, max=32, message="Username must be between 3 and 32 characters.")])
     name = StringField("Name", validators=[DataRequired()])
     email = StringField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=8, message="Password must be at least 8 characters.")])
     confirm = PasswordField(
-        "Confirm Password", validators=[DataRequired(), EqualTo("password")]
+        "Confirm Password", validators=[DataRequired(), EqualTo("password", message="Passwords must match.")]
     )
     fitness_goal = SelectField(
         "Fitness Goal",

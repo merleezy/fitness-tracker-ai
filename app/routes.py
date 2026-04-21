@@ -106,9 +106,12 @@ def register():
     if form.validate_on_submit():
         existing_user = User.query.filter_by(email=form.email.data).first()
         existing_username = User.query.filter_by(username=form.username.data).first()
-        if existing_user or existing_username:
-            flash("Email or username already in use.", "danger")
-            return redirect(url_for("register"))
+        if existing_user:
+            flash("That email address is already registered. Try logging in instead.", "danger")
+            return render_template("register.html", form=form)
+        if existing_username:
+            flash("That username is already taken — please choose another.", "danger")
+            return render_template("register.html", form=form)
 
         user = User(
             username=form.username.data,

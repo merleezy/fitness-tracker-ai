@@ -115,7 +115,7 @@
   function goToStep2() {
     const errorBox = document.getElementById("step1-error");
     const form = document.getElementById("register-form");
-    const fieldLabels = { name: "Name", username: "Username", email: "Email", password: "Password", confirm: "Confirm Password" };
+    const fieldLabels = { name: "Name", username: "Username", email: "Email" };
     let missing = [];
 
     Object.keys(fieldLabels).forEach(fieldName => {
@@ -130,11 +130,12 @@
 
     const pw = form.querySelector('#password');
     const cn = form.querySelector('#confirm');
-    const mismatch = pw && cn && pw.value.trim() && cn.value.trim() && pw.value !== cn.value;
+    const mismatch = pw && cn && pw.value && cn.value && pw.value !== cn.value;
     if (mismatch) cn.classList.add("is-invalid");
+    else if (cn) cn.classList.remove("is-invalid");
 
     if (missing.length > 0) {
-      errorBox.textContent = `Missing: ${missing.join(", ")}`;
+      errorBox.textContent = `Please fill in: ${missing.join(", ")}`;
       errorBox.classList.remove("d-none");
       return;
     }
