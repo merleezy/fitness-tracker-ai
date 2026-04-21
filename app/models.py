@@ -21,7 +21,7 @@ class User(UserMixin, db.Model):
     weight = db.Column(db.Float)
     height = db.Column(db.Float)
     fitness_goal = db.Column(db.String(120))
-    password_hash = db.Column(db.String(128))
+    password_hash = db.Column(db.String(256))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
