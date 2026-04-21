@@ -1,25 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Home{% endblock %}
-
+{% block title %}Fitness Tracker{% endblock %}
 {% block content %}
-  {% if session.get('user_id') %}
-    <div class="text-center mt-5">
-      <h1 class="mb-4">Welcome back, {{ session.get('username') }}!</h1>
-      <div class="d-grid gap-3 col-md-6 mx-auto">
-        <a href="{{ url_for('user_dashboard', username=session['username']) }}" class="btn btn-primary btn-lg">Go to Dashboard</a>
-        <a href="{{ url_for('log_workout', username=session['username']) }}" class="btn btn-outline-primary">Log a Workout</a>
-        <a href="{{ url_for('log_meal', username=session['username']) }}" class="btn btn-outline-primary">Log a Meal</a>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
-      </div>
+
+{% if current_user.is_authenticated %}
+<div class="row justify-content-center">
+  <div class="col-md-6 text-center">
+    <h1 class="mb-2">Welcome back, {{ current_user.name }}!</h1>
+    <p class="text-muted mb-4">Ready to keep making progress?</p>
+    <a href="{{ url_for('user_dashboard') }}" class="btn btn-primary btn-lg px-5">Go to Dashboard</a>
+  </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <h1 class="display-5 fw-bold mb-3">Your personal fitness companion</h1>
+  <p class="lead text-muted mb-4 mx-auto" style="max-width: 520px;">
+    Track meals, log workouts, monitor your weight, and get recommendations tailored to your goals.
+  </p>
+  <a href="{{ url_for('register') }}" class="btn btn-success btn-lg px-4 me-2">Get Started</a>
+  <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Log In</a>
+</div>
+
+<div class="row g-4 mt-2">
+  <div class="col-md-3">
+    <div class="card h-100 text-center p-4 shadow-sm">
+      <div class="mb-3" style="font-size:2rem;">🍽️</div>
+      <h5 class="fw-semibold">Meal Logging</h5>
+      <p class="text-muted small mb-0">Search foods, track macros, and see your daily intake at a glance.</p>
     </div>
-  {% else %}
-    <div class="text-center mt-5">
-      <h1 class="mb-4">Welcome to the Fitness Tracker</h1>
-      <p class="lead">Track your meals, workouts, and progress — and get curated recommendations tailored to your goals.</p>
-      <div class="mt-4">
-        <a href="{{ url_for('register') }}" class="btn btn-success btn-lg me-3">Get Started</a>
-        <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg">Log In</a>
-      </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100 text-center p-4 shadow-sm">
+      <div class="mb-3" style="font-size:2rem;">🏋️</div>
+      <h5 class="fw-semibold">Workout Tracking</h5>
+      <p class="text-muted small mb-0">Log every session and keep a full history of your training.</p>
     </div>
-  {% endif %}
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100 text-center p-4 shadow-sm">
+      <div class="mb-3" style="font-size:2rem;">📈</div>
+      <h5 class="fw-semibold">Progress Charts</h5>
+      <p class="text-muted small mb-0">Visualise your weight trend and macro breakdown over time.</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100 text-center p-4 shadow-sm">
+      <div class="mb-3" style="font-size:2rem;">💡</div>
+      <h5 class="fw-semibold">Recommendations</h5>
+      <p class="text-muted small mb-0">Get meal and workout suggestions personalised to your goal.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

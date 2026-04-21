@@ -1,73 +1,94 @@
 {% extends "base.html" %}
 {% block title %}Log Meal{% endblock %}
 {% block content %}
-<h1 class="mb-4">Log a Meal for {{ user.name }}</h1>
 
-<form method="POST" novalidate class="card p-4 shadow-sm">
-  {{ form.hidden_tag() }}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="mb-1">Log a Meal</h1>
+    <p class="text-muted mb-4">Search for a food or enter macros manually.</p>
 
-  <div class="mb-3">
-    {{ form.meal_type.label(class="form-label") }}
-    {{ form.meal_type(class="form-select") }}
-  </div>
+    <form method="POST" novalidate id="meal-form">
+      {{ form.hidden_tag() }}
+      <div class="card shadow-sm">
+        <div class="card-body">
 
-  <div class="mb-3">
-    {{ form.name.label(class="form-label") }}
-    {{ form.name(class="form-control", id="food-name", list="food-suggestions", autocomplete="off", oninput="autoSuggest()") }}
-    <datalist id="food-suggestions"></datalist>
-    <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="searchFood()">Search</button>
-    <small id="search-status" class="form-text text-muted"></small>
-  </div>
+          <div class="mb-3">
+            {{ form.meal_type.label(class="form-label") }}
+            {{ form.meal_type(class="form-select") }}
+          </div>
 
-  <div class="row">
-    <div class="col-md-6 mb-3">
-      <label for="amount" class="form-label">Amount</label>
-      <input type="number" id="amount" name="amount" value="100" class="form-control" oninput="scaleNutrition()">
-    </div>
-    <div class="col-md-6 mb-3">
-      <label for="unit" class="form-label">Unit</label>
-      <select id="unit" name="unit" class="form-select" onchange="scaleNutrition()">
-        <option value="grams" selected>grams (g)</option>
-        <option value="ounces">ounces (oz)</option>
-        <option value="pounds">pounds (lb)</option>
-      </select>
-    </div>
-  </div>
+          <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            <div class="input-group">
+              {{ form.name(class="form-control", id="food-name", autocomplete="off", placeholder="e.g. Chicken breast", oninput="autoSuggest()") }}
+              <button type="button" class="btn btn-outline-secondary" onclick="searchFood()">Search</button>
+            </div>
+            <datalist id="food-suggestions"></datalist>
+            <small id="search-status" class="form-text text-muted"></small>
+          </div>
 
-  <div class="mb-3">
-    {{ form.calories.label(class="form-label") }}
-    {{ form.calories(id="calories", class="form-control") }}
-  </div>
-  <div class="mb-3">
-    {{ form.protein.label(class="form-label") }}
-    {{ form.protein(id="protein", class="form-control") }}
-  </div>
-  <div class="mb-3">
-    {{ form.carbs.label(class="form-label") }}
-    {{ form.carbs(id="carbs", class="form-control") }}
-  </div>
-  <div class="mb-3">
-    {{ form.fats.label(class="form-label") }}
-    {{ form.fats(id="fats", class="form-control") }}
-  </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="amount" class="form-label">Amount</label>
+              <input type="number" id="amount" name="amount" value="100" class="form-control" oninput="scaleNutrition()">
+            </div>
+            <div class="col-6">
+              <label for="unit" class="form-label">Unit</label>
+              <select id="unit" name="unit" class="form-select" onchange="scaleNutrition()">
+                <option value="grams" selected>grams (g)</option>
+                <option value="ounces">ounces (oz)</option>
+                <option value="pounds">pounds (lb)</option>
+              </select>
+            </div>
+          </div>
 
-  <button type="submit" class="btn btn-primary">Save Meal</button>
-</form>
+          <div class="row g-3">
+            <div class="col-6">
+              {{ form.calories.label(class="form-label") }}
+              {{ form.calories(id="calories", class="form-control", placeholder="0") }}
+              {% for e in form.calories.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-6">
+              {{ form.protein.label(class="form-label") }}
+              <div class="input-group">
+                {{ form.protein(id="protein", class="form-control", placeholder="0") }}
+                <span class="input-group-text">g</span>
+              </div>
+              {% for e in form.protein.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-6">
+              {{ form.carbs.label(class="form-label") }}
+              <div class="input-group">
+                {{ form.carbs(id="carbs", class="form-control", placeholder="0") }}
+                <span class="input-group-text">g</span>
+              </div>
+              {% for e in form.carbs.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-6">
+              {{ form.fats.label(class="form-label") }}
+              <div class="input-group">
+                {{ form.fats(id="fats", class="form-control", placeholder="0") }}
+                <span class="input-group-text">g</span>
+              </div>
+              {% for e in form.fats.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
 
-<div class="mt-4">
-  <a class="btn btn-outline-secondary" href="{{ url_for('user_dashboard', username=user.username) }}">Back to Dashboard</a>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('user_dashboard') }}">Back</a>
+          <button type="submit" class="btn btn-primary">Save Meal</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
   function searchFood() {
     const query = document.getElementById("food-name").value;
     const status = document.getElementById("search-status");
-
-    if (!query.trim()) {
-      status.textContent = "Please enter a food name.";
-      return;
-    }
-
+    if (!query.trim()) { status.textContent = "Please enter a food name."; return; }
     status.textContent = "Searching...";
     fetch("/search_food", {
       method: "POST",
@@ -83,41 +104,26 @@
         document.getElementById("amount").value = 100;
         scaleNutrition();
         document.getElementById("food-name").value = data.name;
-        document.getElementById("calories").value = round(data.calories);
-        document.getElementById("protein").value = round(data.protein, 1);
-        document.getElementById("carbs").value = round(data.carbs, 1);
-        document.getElementById("fats").value = round(data.fat, 1);
         status.textContent = `Auto-filled macros for: ${data.name}`;
       }
     })
-    .catch(() => {
-      status.textContent = "Error retrieving food data.";
-    });
+    .catch(() => { status.textContent = "Error retrieving food data."; });
   }
 
   function scaleNutrition() {
     if (!window.lastFoodData) return;
-
-    const amountField = document.getElementById("amount");
-    const unit = document.getElementById("unit").value;
-    const amount = parseFloat(amountField.value);
-
+    const amount = parseFloat(document.getElementById("amount").value);
     if (isNaN(amount)) return;
-
-    const grams = toGrams(amount, unit);
-    const factor = grams / 100.0;
-
+    const factor = toGrams(amount, document.getElementById("unit").value) / 100.0;
     document.getElementById("calories").value = round(window.lastFoodData.calories * factor);
     document.getElementById("protein").value = round(window.lastFoodData.protein * factor, 1);
     document.getElementById("carbs").value = round(window.lastFoodData.carbs * factor, 1);
     document.getElementById("fats").value = round(window.lastFoodData.fat * factor, 1);
   }
 
-
   function autoSuggest() {
     const input = document.getElementById("food-name");
     const list = document.getElementById("food-suggestions");
-
     fetch(`/autocomplete_food?q=${encodeURIComponent(input.value)}`)
       .then(res => res.json())
       .then(data => {
@@ -125,10 +131,6 @@
         data.forEach(item => {
           const option = document.createElement("option");
           option.value = item.label;
-          option.setAttribute("data-calories", item.value.calories);
-          option.setAttribute("data-protein", item.value.protein);
-          option.setAttribute("data-carbs", item.value.carbs);
-          option.setAttribute("data-fat", item.value.fat);
           list.appendChild(option);
         });
       });
@@ -140,14 +142,9 @@
     return amount;
   }
 
-  function fromGrams(grams, unit) {
-    if (unit === "ounces") return grams / 28.3495;
-    if (unit === "pounds") return grams / 453.592;
-    return grams;
-  }
-
   function round(num, digits = 0) {
     return +(Math.round(num + `e+${digits}`) + `e-${digits}`);
   }
 </script>
+
 {% endblock %}

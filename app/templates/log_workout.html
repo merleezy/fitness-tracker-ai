@@ -1,25 +1,47 @@
 {% extends "base.html" %}
 {% block title %}Log Workout{% endblock %}
 {% block content %}
-<h1 class="mb-4">Log a Workout</h1>
 
-<form method="POST" novalidate class="card p-4 shadow-sm">
-  {{ form.hidden_tag() }}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="mb-1">Log a Workout</h1>
+    <p class="text-muted mb-4">Record what you did today.</p>
 
-  {% for field in [form.type, form.duration, form.calories_burned] %}
-    <div class="mb-3">
-      {{ field.label(class="form-label") }}
-      {{ field(class="form-control") }}
-      {% for error in field.errors %}
-        <div class="text-danger small">{{ error }}</div>
-      {% endfor %}
-    </div>
-  {% endfor %}
-
-  <button type="submit" class="btn btn-primary">Save Workout</button>
-</form>
-
-<div class="mt-4">
-  <a class="btn btn-outline-secondary" href="{{ url_for('user_dashboard', username=user.username) }}">Back to Dashboard</a>
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.type.label(class="form-label") }}
+            {{ form.type(class="form-select") }}
+            {% for error in form.type.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              {{ form.duration.label(class="form-label") }}
+              {{ form.duration(class="form-control", placeholder="e.g. 45") }}
+              {% for error in form.duration.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-6">
+              {{ form.calories_burned.label(class="form-label") }}
+              {{ form.calories_burned(class="form-control", placeholder="e.g. 300") }}
+              {% for error in form.calories_burned.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('user_dashboard') }}">Back</a>
+          <button type="submit" class="btn btn-primary">Save Workout</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
+
 {% endblock %}

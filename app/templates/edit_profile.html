@@ -2,81 +2,99 @@
 {% block title %}Edit Profile{% endblock %}
 {% block content %}
 
-<h1 class="mb-4">Edit Your Profile</h1>
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="mb-1">Edit Profile</h1>
+    <p class="text-muted mb-4">Update your details and fitness settings.</p>
 
-<form method="POST" novalidate class="card p-4 shadow-sm">
-  {{ form.hidden_tag() }}
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
 
-  {% for field in [form.name, form.username, form.email] %}
-    <div class="mb-3">
-      {{ field.label(class="form-label") }}
-      {{ field(class="form-control") }}
-      {% for error in field.errors %}
-        <div class="text-danger small">{{ error }}</div>
-      {% endfor %}
-    </div>
-  {% endfor %}
-
-  <div class="row g-3 mb-3">
-    <div class="col-6">
-      {{ form.age.label(class="form-label") }}
-      {{ form.age(class="form-control") }}
-      {% for e in form.age.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
-    </div>
-    <div class="col-6">
-      {{ form.weight.label(class="form-label") }}
-      {{ form.weight(class="form-control") }}
-      {% for e in form.weight.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
-    </div>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Height</label>
-    <div class="row g-2">
-      <div class="col-6">
-        <div class="input-group">
-          {{ form.height_ft(class="form-control") }}
-          <span class="input-group-text">ft</span>
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-semibold">Account Details</div>
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+            {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control") }}
+            {% for e in form.username.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control") }}
+            {% for e in form.email.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
         </div>
-        {% for e in form.height_ft.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
       </div>
-      <div class="col-6">
-        <div class="input-group">
-          {{ form.height_in(class="form-control") }}
-          <span class="input-group-text">in</span>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-semibold">Fitness Profile</div>
+        <div class="card-body">
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              {{ form.age.label(class="form-label") }}
+              {{ form.age(class="form-control") }}
+              {% for e in form.age.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-6">
+              {{ form.weight.label(class="form-label") }}
+              {{ form.weight(class="form-control") }}
+              {% for e in form.weight.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Height</label>
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="input-group">
+                  {{ form.height_ft(class="form-control") }}
+                  <span class="input-group-text">ft</span>
+                </div>
+                {% for e in form.height_ft.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+              </div>
+              <div class="col-6">
+                <div class="input-group">
+                  {{ form.height_in(class="form-control") }}
+                  <span class="input-group-text">in</span>
+                </div>
+                {% for e in form.height_in.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="mb-1">
+            {{ form.fitness_goal.label(class="form-label") }}
+            {{ form.fitness_goal(class="form-select") }}
+            {% for e in form.fitness_goal.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
         </div>
-        {% for e in form.height_in.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
       </div>
-    </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-semibold">Change Password <span class="text-muted fw-normal small">(leave blank to keep current)</span></div>
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control") }}
+            {% for e in form.password.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="mb-1">
+            {{ form.confirm.label(class="form-label") }}
+            {{ form.confirm(class="form-control") }}
+            {% for e in form.confirm.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <a class="btn btn-outline-secondary" href="{{ url_for('user_dashboard') }}">Back</a>
+        <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+      </div>
+    </form>
   </div>
-
-  <div class="mb-3">
-    {{ form.fitness_goal.label(class="form-label") }}
-    {{ form.fitness_goal(class="form-select") }}
-    {% for e in form.fitness_goal.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
-  </div>
-
-  <div class="mb-3">
-    {{ form.password.label(class="form-label") }}
-    {{ form.password(class="form-control") }}
-    {% for error in form.password.errors %}
-      <div class="text-danger small">{{ error }}</div>
-    {% endfor %}
-  </div>
-
-  <div class="mb-3">
-    {{ form.confirm.label(class="form-label") }}
-    {{ form.confirm(class="form-control") }}
-    {% for error in form.confirm.errors %}
-      <div class="text-danger small">{{ error }}</div>
-    {% endfor %}
-  </div>
-
-  <button type="submit" class="btn btn-success">Save Changes</button>
-</form>
-
-<div class="mt-4">
-  <a class="btn btn-outline-secondary" href="{{ url_for('user_dashboard', username=user.username) }}">Back to Dashboard</a>
 </div>
 
 {% endblock %}

@@ -137,8 +137,18 @@
     if (mismatch) cn.classList.add("is-invalid");
     else if (cn) cn.classList.remove("is-invalid");
 
+    const emailEl = form.querySelector('#email');
+    const validEmail = emailEl && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim());
+    if (emailEl && !validEmail) emailEl.classList.add("is-invalid");
+    else if (emailEl) emailEl.classList.remove("is-invalid");
+
     if (missing.length > 0) {
       errorBox.textContent = `Please fill in: ${missing.join(", ")}`;
+      errorBox.classList.remove("d-none");
+      return;
+    }
+    if (emailEl && !validEmail) {
+      errorBox.textContent = "Please enter a valid email address.";
       errorBox.classList.remove("d-none");
       return;
     }

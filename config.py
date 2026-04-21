@@ -8,6 +8,11 @@ load_dotenv(os.path.join(basedir, '.env'))
 _db_url = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'app.db')
 if _db_url.startswith('postgres://'):
     _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+# Convert relative sqlite paths to absolute so the db file always lands in the project root
+if _db_url.startswith('sqlite:///'):
+    db_path = _db_url[len('sqlite:///'):]
+    if not os.path.isabs(db_path):
+        _db_url = 'sqlite:///' + os.path.join(basedir, db_path)
 
 SQLALCHEMY_DATABASE_URI = _db_url
 SQLALCHEMY_TRACK_MODIFICATIONS = False
