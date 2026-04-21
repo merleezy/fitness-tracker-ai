@@ -3,11 +3,45 @@
 {% block content %}
 
 {% if current_user.is_authenticated %}
-<div class="row justify-content-center">
-  <div class="col-md-6 text-center">
-    <h1 class="mb-2">Welcome back, {{ current_user.name }}!</h1>
-    <p class="text-muted mb-4">Ready to keep making progress?</p>
-    <a href="{{ url_for('user_dashboard') }}" class="btn btn-primary btn-lg px-5">Go to Dashboard</a>
+<h1 class="mb-1">Welcome back, {{ current_user.name }}!</h1>
+<p class="text-muted mb-4">What are you working on today?</p>
+
+<div class="row g-4">
+  <div class="col-md-3">
+    <a href="{{ url_for('user_dashboard') }}" class="text-decoration-none">
+      <div class="card h-100 text-center p-4 shadow-sm">
+        <i class="bi bi-speedometer2 mb-2" style="font-size:2rem;"></i>
+        <h6 class="fw-semibold mb-0">Dashboard</h6>
+        <small class="text-muted">Overview & recommendations</small>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{{ url_for('log_meal') }}" class="text-decoration-none">
+      <div class="card h-100 text-center p-4 shadow-sm">
+        <i class="bi bi-egg-fried mb-2" style="font-size:2rem;"></i>
+        <h6 class="fw-semibold mb-0">Log a Meal</h6>
+        <small class="text-muted">Track your nutrition</small>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{{ url_for('log_workout') }}" class="text-decoration-none">
+      <div class="card h-100 text-center p-4 shadow-sm">
+        <i class="bi bi-lightning-charge mb-2" style="font-size:2rem;"></i>
+        <h6 class="fw-semibold mb-0">Log a Workout</h6>
+        <small class="text-muted">Record your session</small>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{{ url_for('progress') }}" class="text-decoration-none">
+      <div class="card h-100 text-center p-4 shadow-sm">
+        <i class="bi bi-graph-up mb-2" style="font-size:2rem;"></i>
+        <h6 class="fw-semibold mb-0">View Progress</h6>
+        <small class="text-muted">Charts & analytics</small>
+      </div>
+    </a>
   </div>
 </div>
 
@@ -24,28 +58,28 @@
 <div class="row g-4 mt-2">
   <div class="col-md-3">
     <div class="card h-100 text-center p-4 shadow-sm">
-      <div class="mb-3" style="font-size:2rem;">🍽️</div>
+      <i class="bi bi-egg-fried mb-3" style="font-size:2rem;"></i>
       <h5 class="fw-semibold">Meal Logging</h5>
       <p class="text-muted small mb-0">Search foods, track macros, and see your daily intake at a glance.</p>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card h-100 text-center p-4 shadow-sm">
-      <div class="mb-3" style="font-size:2rem;">🏋️</div>
+      <i class="bi bi-lightning-charge mb-3" style="font-size:2rem;"></i>
       <h5 class="fw-semibold">Workout Tracking</h5>
       <p class="text-muted small mb-0">Log every session and keep a full history of your training.</p>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card h-100 text-center p-4 shadow-sm">
-      <div class="mb-3" style="font-size:2rem;">📈</div>
+      <i class="bi bi-graph-up mb-3" style="font-size:2rem;"></i>
       <h5 class="fw-semibold">Progress Charts</h5>
       <p class="text-muted small mb-0">Visualise your weight trend and macro breakdown over time.</p>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card h-100 text-center p-4 shadow-sm">
-      <div class="mb-3" style="font-size:2rem;">💡</div>
+      <i class="bi bi-lightbulb mb-3" style="font-size:2rem;"></i>
       <h5 class="fw-semibold">Recommendations</h5>
       <p class="text-muted small mb-0">Get meal and workout suggestions personalised to your goal.</p>
     </div>
