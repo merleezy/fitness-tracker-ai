@@ -163,6 +163,13 @@
     document.getElementById("step-1").classList.remove("d-none");
   }
 
+  // Intercept Enter key in step 1 so it goes through goToStep2() validation
+  document.getElementById("step-1").querySelectorAll("input").forEach(input => {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); goToStep2(); }
+    });
+  });
+
   // If server returns errors on step-2 fields, jump straight to step 2
   const step2Fields = ["age", "weight", "height_ft", "height_in", "fitness_goal"];
   const hasStep2Errors = step2Fields.some(name => {
