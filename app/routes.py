@@ -118,6 +118,8 @@ def register():
             name=form.name.data,
             email=form.email.data,
             age=form.age.data,
+            sex=form.sex.data,
+            activity_level=form.activity_level.data,
             weight=form.weight.data,
             height=form.height_ft.data * 12 + form.height_in.data,
             fitness_goal=form.fitness_goal.data,
@@ -236,6 +238,8 @@ def edit_profile():
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.age = form.age.data
+        current_user.sex = form.sex.data
+        current_user.activity_level = form.activity_level.data
         current_user.weight = form.weight.data
         if not WeightLog.query.filter_by(user_id=current_user.id).first():
             log = WeightLog(

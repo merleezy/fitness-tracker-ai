@@ -44,6 +44,22 @@ class UserRegistrationForm(FlaskForm):
         validators=[DataRequired()],
     )
     age = IntegerField("Age", validators=[DataRequired(), NumberRange(min=10, max=100)])
+    sex = SelectField(
+        "Biological Sex",
+        choices=[("male", "Male"), ("female", "Female"), ("other", "Prefer not to say")],
+        validators=[DataRequired()],
+    )
+    activity_level = SelectField(
+        "Activity Level",
+        choices=[
+            ("sedentary", "Sedentary — desk job, little exercise"),
+            ("lightly_active", "Lightly Active — 1–3 days/week"),
+            ("moderately_active", "Moderately Active — 3–5 days/week"),
+            ("very_active", "Very Active — 6–7 days/week"),
+            ("extra_active", "Extremely Active — physical job + daily training"),
+        ],
+        validators=[DataRequired()],
+    )
     weight = FloatField("Weight (lbs)", validators=[DataRequired(), NumberRange(min=50, max=700)])
     height_ft = IntegerField("Height (ft)", validators=[DataRequired(), NumberRange(min=3, max=8)])
     height_in = IntegerField("Height (in)", validators=[DataRequired(), NumberRange(min=0, max=11)])
@@ -106,6 +122,22 @@ class ProfileForm(FlaskForm):
         "Confirm Password", validators=[Optional(), EqualTo("password")]
     )
     age = IntegerField("Age", validators=[DataRequired(), NumberRange(min=10, max=100)])
+    sex = SelectField(
+        "Biological Sex",
+        choices=[("male", "Male"), ("female", "Female"), ("other", "Prefer not to say")],
+        validators=[DataRequired()],
+    )
+    activity_level = SelectField(
+        "Activity Level",
+        choices=[
+            ("sedentary", "Sedentary — desk job, little exercise"),
+            ("lightly_active", "Lightly Active — 1–3 days/week"),
+            ("moderately_active", "Moderately Active — 3–5 days/week"),
+            ("very_active", "Very Active — 6–7 days/week"),
+            ("extra_active", "Extremely Active — physical job + daily training"),
+        ],
+        validators=[DataRequired()],
+    )
     weight = FloatField("Weight (lbs)", validators=[DataRequired(), NumberRange(min=50, max=700)])
     height_ft = IntegerField("Height (ft)", validators=[DataRequired(), NumberRange(min=3, max=8)])
     height_in = IntegerField("Height (in)", validators=[DataRequired(), NumberRange(min=0, max=11)])

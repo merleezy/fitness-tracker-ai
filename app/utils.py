@@ -59,24 +59,35 @@ def search_usda_food(query, max_results=5):
 
 
 def estimate_tdee(user):
-    # Harris-Benedict Formula for BMR
-    weight_kg = user.weight * 0.4536
-    height_cm = user.height * 2.54
-    age = user.age
+    weight_kg = (user.weight or 150) * 0.4536
+    height_cm = (user.height or 68) * 2.54
+    age = user.age or 25
 
-    bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
-
-    # Activity multiplier: moderate default
-    if user.fitness_goal == "cutting":
-        tdee = bmr * 1.4
-    elif user.fitness_goal == "lean muscle":
-        tdee = bmr * 1.6
-    elif user.fitness_goal == "endurance":
-        tdee = bmr * 1.7
+    # Mifflin-St Jeor BMR (sex-aware)
+    if (user.sex or "male") == "female":
+        bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
     else:
-        tdee = bmr * 1.5
+        bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
 
-    return round(tdee)
+    activity_multipliers = {
+        "sedentary": 1.2,
+        "lightly_active": 1.375,
+        "moderately_active": 1.55,
+        "very_active": 1.725,
+        "extra_active": 1.9,
+    }
+    multiplier = activity_multipliers.get(user.activity_level or "moderately_active", 1.55)
+    maintenance = round(bmr * multiplier)
+
+    goal_adjustments = {
+        "cutting": -500,
+        "lean muscle": +300,
+        "endurance": 0,
+        "balanced": 0,
+    }
+    target = maintenance + goal_adjustments.get(user.fitness_goal or "balanced", 0)
+
+    return {"maintenance": maintenance, "target": target}
 
 
 def average_recent_macros(user_id, limit=3):
@@ -524,11 +535,12 @@ def generate_recommendation(user):
 
     # === Personalization Based on User Macros and TDEE ===
     tdee = estimate_tdee(user)
+    target_calories = tdee["target"]
     macros = average_recent_macros(user.id)
 
     if macros:
         low_protein_threshold = 20  # grams
-        high_calorie_margin = 0.05  # 5% over TDEE considered high for cutting
+        high_calorie_margin = 0.05  # 5% over target considered high for cutting
 
         # Case 1: Protein intake is critically low
         if macros["protein"] < low_protein_threshold:
@@ -539,8 +551,8 @@ def generate_recommendation(user):
             ]
             trend_note += " Protein intake is low — adding high-protein meals to support your goal."
 
-        # Case 2: User is trying to cut but consuming more than TDEE
-        if user.fitness_goal == "cutting" and macros["calories"] > tdee * (
+        # Case 2: User is trying to cut but consuming more than target
+        if user.fitness_goal == "cutting" and macros["calories"] > target_calories * (
             1 + high_calorie_margin
         ):
             meal_opts += [
@@ -549,7 +561,7 @@ def generate_recommendation(user):
                 "Grilled Cod or Tilapia with Steamed Broccoli & Cauliflower Mash",
             ]
             trend_note += (
-                "Your average calorie intake is above your estimated needs."
+                "Your average calorie intake is above your estimated needs. "
                 "Try lighter, lower-carb meals to stay in a deficit."
             )
 

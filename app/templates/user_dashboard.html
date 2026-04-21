@@ -103,15 +103,16 @@ content %}
         <small class="text-muted">{{ daily_summary.count }} item{{ 's' if daily_summary.count != 1 else '' }} logged</small>
       </div>
       <div class="card-body">
-        {% set cal_pct = [[((daily_summary.calories / tdee) * 100) | int, 100] | min, 0] | max %}
-        {% set cal_over = daily_summary.calories > tdee %}
+        {% set cal_target = tdee.target %}
+        {% set cal_pct = [[((daily_summary.calories / cal_target) * 100) | int, 100] | min, 0] | max %}
+        {% set cal_over = daily_summary.calories > cal_target %}
         <div class="mb-3">
           <div class="d-flex justify-content-between mb-1">
             <span><strong>Calories</strong></span>
             <span>
-              {{ daily_summary.calories | int }} / {{ tdee }} kcal
+              {{ daily_summary.calories | int }} / {{ cal_target }} kcal
               {% if cal_over %}
-                <span class="text-danger fw-semibold">(+{{ (daily_summary.calories - tdee) | int }} over)</span>
+                <span class="text-danger fw-semibold">(+{{ (daily_summary.calories - cal_target) | int }} over)</span>
               {% endif %}
             </span>
           </div>
@@ -121,9 +122,9 @@ content %}
           </div>
         </div>
         <div class="row g-3">
-          {% set protein_target = ((tdee * 0.30) / 4) | int %}
-          {% set carbs_target   = ((tdee * 0.45) / 4) | int %}
-          {% set fats_target    = ((tdee * 0.25) / 9) | int %}
+          {% set protein_target = ((tdee.target * 0.30) / 4) | int %}
+          {% set carbs_target   = ((tdee.target * 0.45) / 4) | int %}
+          {% set fats_target    = ((tdee.target * 0.25) / 9) | int %}
           <div class="col-md-4">
             <div class="d-flex justify-content-between">
               <small><strong>Protein</strong></small>

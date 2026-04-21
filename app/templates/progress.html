@@ -3,7 +3,14 @@ block content %}
 <h1 class="mb-4">Your Progress</h1>
 
 <div class="card p-4 shadow-sm mb-4">
-  <p><strong>TDEE Estimate:</strong> {{ tdee }} kcal/day</p>
+  <p><strong>Maintenance Calories:</strong> {{ tdee.maintenance }} kcal/day</p>
+  <p><strong>Daily Target:</strong> {{ tdee.target }} kcal/day
+    {% if tdee.target < tdee.maintenance %}
+      <span class="text-muted small">({{ tdee.maintenance - tdee.target }} kcal deficit)</span>
+    {% elif tdee.target > tdee.maintenance %}
+      <span class="text-muted small">({{ tdee.target - tdee.maintenance }} kcal surplus)</span>
+    {% endif %}
+  </p>
   <p><strong>Total Workouts Logged:</strong> {{ workouts|length }}</p>
   <p><strong>Total Meals Logged:</strong> {{ meals|length }}</p>
 </div>
@@ -129,7 +136,7 @@ block content %}
         {
           type: "line",
           label: "TDEE Target",
-          data: Array({{ calorie_labels|length }}).fill({{ tdee }}),
+          data: Array({{ calorie_labels|length }}).fill({{ tdee.target }}),
           borderColor: "#e8710a",
           borderWidth: 2,
           borderDash: [6, 4],

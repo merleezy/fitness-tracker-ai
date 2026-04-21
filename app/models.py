@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(64))
     email = db.Column(db.String(120), unique=True)
     age = db.Column(db.Integer)
+    sex = db.Column(db.String(10))
+    activity_level = db.Column(db.String(20))
     weight = db.Column(db.Float)
     height = db.Column(db.Float)
     fitness_goal = db.Column(db.String(120))
