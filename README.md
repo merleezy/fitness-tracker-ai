@@ -4,8 +4,6 @@ A full-stack fitness tracking web app built with Flask and SQLAlchemy. Track mea
 
 **Live demo:** https://smart-fitness-tracker-production-8d95.up.railway.app/
 
-![Smart Fitness Tracker Demo](docs/demo.gif)
-
 ## Features
 
 - **Two-step registration** with fitness profile setup (goal, activity level, biological sex) for accurate calorie targets
