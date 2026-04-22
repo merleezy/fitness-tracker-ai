@@ -1,8 +1,9 @@
 import os
+from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-from random import choice
 from sqlalchemy import func
-from app.models import Meal, Recommendation, WeightLog
+from app import db
+from app.models import Meal, Recommendation, WeightLog, Workout
 import requests
 
 API_KEY = os.environ.get("USDA_API_KEY")
@@ -90,77 +91,6 @@ def estimate_tdee(user):
     return {"maintenance": maintenance, "target": target}
 
 
-def average_recent_macros(user_id, limit=3):
-    recent_meals = (
-        Meal.query.filter_by(user_id=user_id)
-        .order_by(Meal.id.desc())
-        .limit(limit)
-        .all()
-    )
-    if not recent_meals:
-        return None
-
-    avg = {
-        "calories": sum(m.calories for m in recent_meals) / len(recent_meals),
-        "protein": sum(m.protein for m in recent_meals) / len(recent_meals),
-        "carbs": sum(m.carbs for m in recent_meals) / len(recent_meals),
-        "fats": sum(m.fats for m in recent_meals) / len(recent_meals),
-    }
-
-    return {k: round(v, 1) for k, v in avg.items()}
-
-
-def get_user_feedback_stats(user_id):
-    """Returns lists of meals/workouts that are frequently followed or skipped."""
-    from app.models import Recommendation, db
-
-    # Count how many times each item was followed or skipped
-    feedback = (
-        db.session.query(
-            Recommendation.meal_rec,
-            Recommendation.followed,
-            func.count().label("count"),
-        )
-        .filter(Recommendation.user_id == user_id, Recommendation.followed.is_not(None))
-        .group_by(Recommendation.meal_rec, Recommendation.followed)
-        .all()
-    )
-
-    followed_meals = set()
-    skipped_meals = set()
-
-    for meal, status, count in feedback:
-        if count >= 2:  # Optional threshold to avoid 1-off decisions
-            if status == "followed":
-                followed_meals.add(meal)
-            elif status == "skipped":
-                skipped_meals.add(meal)
-
-    # Repeat for workouts
-    feedback = (
-        db.session.query(
-            Recommendation.workout_rec,
-            Recommendation.followed,
-            func.count().label("count"),
-        )
-        .filter(Recommendation.user_id == user_id, Recommendation.followed.is_not(None))
-        .group_by(Recommendation.workout_rec, Recommendation.followed)
-        .all()
-    )
-
-    followed_workouts = set()
-    skipped_workouts = set()
-
-    for workout, status, count in feedback:
-        if count >= 2:
-            if status == "followed":
-                followed_workouts.add(workout)
-            elif status == "skipped":
-                skipped_workouts.add(workout)
-
-    return followed_meals, skipped_meals, followed_workouts, skipped_workouts
-
-
 def get_daily_summary(user):
     """Returns total calories and macros logged today."""
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -222,356 +152,248 @@ def get_daily_calorie_history(user, days=7):
     return labels, values
 
 
-def generate_recommendation(user):
-    goal = user.fitness_goal
+@dataclass
+class Insight:
+    category: str   # nutrition | outcome | behavior | pattern | streak | nudge
+    message: str
+    severity: float
+    extra: str = ""
 
-    # --- CUTTING GOAL ---
-    cutting_meals = [
-        "Grilled Chicken & Steamed Broccoli",
-        "Turkey Lettuce Wraps",
-        "Egg Whites + Oats",
-        "Zucchini Noodles + Lean Ground Turkey",
-        "Cauliflower Fried Rice + Shrimp",
-        "Tuna Salad with Avocado",
-        "Greek Yogurt + Berries",
-        "Cottage Cheese + Almonds",
-        "Steak Salad with Olive Oil",
-        "Boiled Eggs + Spinach",
-    ]
-    cutting_workouts = [
-        "30 min HIIT",
-        "45 min Fasted Cardio",
-        "Full Body Calisthenics Circuit",
-        "Tabata Training",
-        "Jump Rope + Bodyweight Mix",
-        "Outdoor Run (3 miles)",
-        "Weighted Circuit Training",
-        "Incline Walking",
-        "Kickboxing",
-    ]
 
-    # --- LEAN MUSCLE GAIN GOAL ---
-    muscle_meals = [
-        "Steak + Brown Rice + Veggies",
-        "Quinoa + Chicken + Avocado",
-        "Salmon + Sweet Potato",
-        "Ground Turkey Tacos (Whole Wheat)",
-        "Lentil Stew + Grilled Chicken",
-        "Greek Yogurt Smoothie + Granola",
-        "Tofu + Stir-Fried Vegetables + Rice",
-        "Cottage Cheese + Banana + Peanut Butter",
-        "High-Protein Pasta Bowl",
-    ]
-    muscle_workouts = [
-        "Push-Pull-Legs Split",
-        "Upper/Lower Body Split",
-        "Heavy Compound Lifting (Squat/Deadlift)",
-        "Chest + Triceps Day",
-        "Back + Biceps Routine",
-        "Shoulder & Core Superset",
-        "Barbell Complexes",
-        "Progressive Overload Program",
-    ]
+def _aware(dt):
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
-    # --- ENDURANCE GOAL ---
-    endurance_meals = [
-        "Whole Grain Pasta + Turkey Meatballs",
-        "Protein Smoothie + Banana",
-        "Oatmeal + Chia Seeds + Almond Butter",
-        "Sweet Potato Hash + Eggs",
-        "Energy Bars + Protein Yogurt",
-        "Salmon + Brown Rice + Greens",
-        "Bean & Veggie Burrito Bowl",
-        "Trail Mix + Greek Yogurt",
-    ]
-    endurance_workouts = [
-        "5K Training Program",
-        "Interval Running (Run/Walk)",
-        "Cycling (40 min steady-state)",
-        "Swimming Laps (30-60 min)",
-        "Rowing Machine Intervals",
-        "Hiking with Pack (1 hr+)",
-        "Stadium Stairs + Core Superset",
-        "Boxing + Jump Rope",
-    ]
 
-    # --- BALANCED / DEFAULT GOAL ---
-    balanced_meals = [
-        "Grilled Chicken + Rice Bowl",
-        "Shrimp Stir-Fry + Mixed Veggies",
-        "Turkey Sandwich + Sweet Potato",
-        "Veggie Omelet + Whole Wheat Toast",
-        "Tofu Bowl + Edamame + Brown Rice",
-        "Salmon + Couscous + Spinach",
-        "Whole Wheat Wrap + Turkey + Hummus",
-    ]
-    balanced_workouts = [
-        "30 min Mixed Cardio",
-        "Full Body Dumbbell Routine",
-        "Pilates or Yoga Flow",
-        "Basic Strength Training (3x/week)",
-        "Spin Class + Light Core Work",
-        "Bodyweight Supersets",
-        "Resistance Band Conditioning",
-        "Cardio + Stretching Combo",
-    ]
+def _days_since_last_workout(user_id):
+    last = (
+        Workout.query.filter_by(user_id=user_id)
+        .order_by(Workout.date.desc())
+        .first()
+    )
+    if not last:
+        return None
+    return (datetime.now(timezone.utc) - _aware(last.date)).days
 
-    if goal == "cutting":
-        meal_opts = cutting_meals[:]
-        workout_opts = cutting_workouts[:]
-    elif goal == "lean muscle":
-        meal_opts = muscle_meals[:]
-        workout_opts = muscle_workouts[:]
-    elif goal == "endurance":
-        meal_opts = endurance_meals[:]
-        workout_opts = endurance_workouts[:]
-    else:
-        meal_opts = balanced_meals[:]
-        workout_opts = balanced_workouts[:]
 
-    # === Analyze Weight Trend ===
-    trend = analyze_weight_trend(user.id)
-    trend_note = ""
+def _workouts_last_7_days(user_id):
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    return Workout.query.filter(
+        Workout.user_id == user_id, Workout.date >= cutoff
+    ).count()
 
-    if trend:
-        rate = trend["rate_per_week"]
-        since = trend["since"]
 
-        if user.fitness_goal == "cutting":
-            if abs(rate) < 0.2:
-                # Weight is stalling or making very slow progress
-                meal_opts += [
-                    "Zucchini Noodle Bowl with Turkey Meatballs",
-                    "Kale + Grilled Chicken Salad with Olive Oil Vinaigrette",
-                    "Cauliflower Rice Stir-Fry with Egg Whites",
-                ]
-                workout_opts += [
-                    "Extra HIIT Session (20-30 min)",
-                    "Fast-Paced Full-Body Circuit",
-                    "Incline Walk + Core Finisher",
-                ]
-                trend_note = (
-                    f"Your weight hasn't changed much since {since}. "
-                    "Try tightening your meal portions or increasing workout intensity."
-                )
+def _weekday_weekend_avg(user_id, days=14):
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    meals = Meal.query.filter(
+        Meal.user_id == user_id, Meal.date >= cutoff
+    ).all()
+    totals = {}
+    for m in meals:
+        day = _aware(m.date).date()
+        totals[day] = totals.get(day, 0) + (m.calories or 0)
+    weekday = [v for d, v in totals.items() if d.weekday() < 5]
+    weekend = [v for d, v in totals.items() if d.weekday() >= 5]
+    if len(weekday) < 3 or len(weekend) < 2:
+        return None
+    return sum(weekday) / len(weekday), sum(weekend) / len(weekend)
 
-            elif rate < -2:
-                # Weight dropping too quickly (rapid weight loss)
-                meal_opts += [
-                    "Maintenance Bowl: Salmon, Quinoa, Avocado, Roasted Veggies",
-                    "Refeed Meal: Steak, Roasted Sweet Potato, Sautéed Spinach",
-                    "Protein-Packed Omelet with Whole Eggs and Toast",
-                ]
-                workout_opts += [
-                    "Mobility Recovery + Light Walk",
-                    "Yoga Flow + Deep Stretch",
-                    "Zone 2 Cardio (e.g., 45 min bike or walk)",
-                ]
-                trend_note = (
-                    f"You're losing weight too quickly (< -2 lbs/week since {since}). "
-                    "Consider a maintenance day or refeed to preserve muscle and energy."
-                )
 
-            elif rate > 1:
-                # Gaining weight on a cutting goal (should not be happening)
-                meal_opts += [
-                    "Balanced Bowl with Veggies + Lean Protein",
-                    "Healthy Salad with Chicken + Balsamic Dressing",
-                    "Grilled Chicken + Zucchini Noodles",
-                ]
-                workout_opts += [
-                    "Strength Training (Full Body)",
-                    "Medium-Intensity Cardio (30-40 mins)",
-                    "Bodyweight HIIT",
-                ]
-                trend_note = (
-                    f"You're gaining weight despite a cutting goal since {since}. "
-                    "Make sure your calorie intake is properly aligned with your goal."
-                )
+def _calorie_streak(user, target):
+    today_start = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    streak = 0
+    for i in range(30):
+        day_start = today_start - timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        cals = (
+            db.session.query(func.coalesce(func.sum(Meal.calories), 0))
+            .filter(
+                Meal.user_id == user.id,
+                Meal.date >= day_start,
+                Meal.date < day_end,
+            )
+            .scalar()
+            or 0
+        )
+        if cals == 0:
+            break
+        if cals <= target:
+            streak += 1
+        else:
+            break
+    return streak
 
-        elif user.fitness_goal == "lean muscle":
-            if rate < 0.1:
-                # Slow muscle gain (muscle gain progress is stagnating)
-                meal_opts += [
-                    "Chicken Thighs with Jasmine Rice and Avocado",
-                    "High-Calorie Protein Shake with Nut Butter & Oats",
-                    "Ground Beef and Potato Bowl with Veggies",
-                ]
-                workout_opts += [
-                    "Heavy Strength Training",
-                    "Push-Pull-Legs Split",
-                    "Upper/Lower Body Split with Progressive Overload",
-                ]
-                trend_note = (
-                    f"Muscle gain progress has slowed since {since}. "
-                    "Add more calories and focus on progressive overload in workouts."
-                )
 
-            elif rate >= 0.5:
-                # Healthy muscle gain
-                meal_opts += [
-                    "Protein-Packed Chicken & Rice",
-                    "Tuna Salad with Avocado",
-                    "High-Protein Smoothie + Nut Butters",
-                ]
-                workout_opts += [
-                    "Strength Training with Progressive Overload",
-                    "Legs + Back Day",
-                    "Push-Pull Routine",
-                ]
-                trend_note = f"You're gaining muscle well since {since}. Keep up with the strength training and nutrition!"
-
-            elif rate > 1:
-                # Rapid muscle gain (warning)
-                meal_opts += [
-                    "Beef + Potato Bowl with Veggies",
-                    "Omelet with Eggs and Avocado",
-                    "High-Calorie Smoothie with Oats and Peanut Butter",
-                ]
-                workout_opts += [
-                    "Heavy Resistance Training",
-                    "Upper Body Hypertrophy Focus",
-                    "Lower Body Strength Training",
-                ]
-                trend_note = f"You're gaining muscle too rapidly since {since}. Consider adjusting calorie intake for more controlled gains."
-
-        elif user.fitness_goal == "endurance":
-            if abs(rate) < 0.1:
-                # No change, endurance improvement still slow
-                meal_opts += [
-                    "Lean Chicken Wrap with Veggies",
-                    "Oatmeal with Banana and Almond Butter",
-                    "Tuna Salad on Whole Grain Toast",
-                ]
-                workout_opts += [
-                    "Low-Intensity Steady-State Cardio",
-                    "Active Recovery (Yoga/Stretching)",
-                    "Moderate-Intensity Running or Cycling",
-                ]
-                trend_note = f"Your weight is staying stable since {since}. Focus on increasing your endurance performance."
-
-            elif abs(rate) > 1:
-                # Significant weight fluctuation in endurance goal
-                meal_opts += [
-                    "Healthy Chicken Salad with Quinoa",
-                    "Roasted Salmon with Sweet Potato",
-                    "Greek Yogurt with Berries",
-                ]
-                workout_opts += [
-                    "HIIT or Interval Training",
-                    "Strength + Endurance Circuit",
-                    "Long-Distance Running or Cycling",
-                ]
-                trend_note = f"You're seeing larger weight fluctuations since {since}. This could indicate changes in muscle/fat distribution, which is normal for endurance training."
-
-        elif user.fitness_goal == "balanced":
-            if abs(rate) < 0.2:
-                # Maintaining current weight, great for a balanced goal
-                meal_opts += [
-                    "Grilled Chicken & Veggies",
-                    "Turkey Sandwich with Avocado",
-                    "Spinach Salad with Grilled Chicken",
-                ]
-                workout_opts += [
-                    "Full-Body Strength Workout",
-                    "Cardio + Core",
-                    "Yoga + Stretching",
-                ]
-                trend_note = f"You're maintaining weight well since {since}. Keep it balanced and focus on strength and performance."
-
-            elif rate > 0.2 and rate < 1:
-                # Slowly gaining muscle and improving fitness
-                meal_opts += [
-                    "Lean Beef + Sweet Potato",
-                    "Greek Yogurt with Almonds",
-                    "High-Protein Smoothie + Nut Butter",
-                ]
-                workout_opts += [
-                    "Strength Training",
-                    "Low-Intensity Cardio",
-                    "Active Recovery",
-                ]
-                trend_note = "You're gaining a little weight, but it's likely muscle. Stay consistent with your balanced fitness approach."
-
-            elif rate > 1:
-                # Gaining weight faster than expected
-                meal_opts += [
-                    "Grilled Fish + Avocado",
-                    "Protein Shake with Oats and Almond Butter",
-                    "Chicken Salad with Olive Oil Dressing",
-                ]
-                workout_opts += [
-                    "Progressive Resistance Training",
-                    "High-Intensity Interval Training",
-                    "Cardio + Core Strengthening",
-                ]
-                trend_note = f"You're gaining weight faster than planned since {since}. Consider re-assessing your calorie intake for a more gradual approach."
-
-    # === Filter Out Last 3 Recommendations ===
-    recent_recs = (
-        Recommendation.query.filter_by(user_id=user.id)
+def _category_skip_rates(user_id):
+    recs = (
+        Recommendation.query.filter(
+            Recommendation.user_id == user_id,
+            Recommendation.followed.is_not(None),
+        )
         .order_by(Recommendation.timestamp.desc())
-        .limit(3)
+        .limit(20)
         .all()
     )
-    recent_meals = {r.meal_rec for r in recent_recs}
-    recent_workouts = {r.workout_rec for r in recent_recs}
+    by_cat = {}
+    for r in recs:
+        cat = r.workout_rec or ""
+        by_cat.setdefault(cat, []).append(r.followed)
+    return {
+        cat: sum(1 for s in xs if s == "skipped") / len(xs)
+        for cat, xs in by_cat.items()
+        if len(xs) >= 3
+    }
 
-    filtered_meals = [m for m in meal_opts if m not in recent_meals]
-    filtered_workouts = [w for w in workout_opts if w not in recent_workouts]
 
-    # === Feedback-Aware Filtering ===
-    followed_meals, skipped_meals, followed_workouts, skipped_workouts = (
-        get_user_feedback_stats(user.id)
+# --- Rules -------------------------------------------------------------
+
+def _rule_calorie_gap_today(user, tdee, daily):
+    if datetime.now(timezone.utc).hour < 18 or daily["count"] == 0:
+        return None
+    target = tdee["target"]
+    if daily["calories"] >= target * 0.6:
+        return None
+    gap = target - daily["calories"]
+    if gap < 300:
+        return None
+    return Insight(
+        category="nutrition",
+        severity=min(gap / target, 1.0),
+        message=(
+            f"{daily['calories']:.0f}/{target} cal with the evening left. "
+            f"Aim for a ~{gap:.0f} cal dinner."
+        ),
     )
 
-    meal_opts = [m for m in meal_opts if m not in skipped_meals]
-    workout_opts = [w for w in workout_opts if w not in skipped_workouts]
 
-    if followed_meals:
-        meal_opts = list(followed_meals) + meal_opts
-    if followed_workouts:
-        workout_opts = list(followed_workouts) + workout_opts
+def _rule_protein_shortfall(user):
+    avg, _, _, _ = calculate_progress_stats(user)
+    if not avg:
+        return None
+    weight_kg = (user.weight or 150) * 0.4536
+    target_p = weight_kg * 1.6
+    if avg["protein"] >= target_p * 0.9:
+        return None
+    gap = target_p - avg["protein"]
+    return Insight(
+        category="nutrition",
+        severity=min(gap / target_p, 1.0),
+        message=(
+            f"Protein averaging {avg['protein']:.0f}g, target {target_p:.0f}g. "
+            "Front-load it at breakfast."
+        ),
+    )
 
-    # === Personalization Based on User Macros and TDEE ===
+
+def _rule_weight_trend(user):
+    trend = analyze_weight_trend(user.id)
+    if not trend:
+        return None
+    rate = trend["rate_per_week"]
+    change = trend["change"]
+    since = trend["since"]
+    goal = user.fitness_goal or "balanced"
+
+    if goal == "cutting":
+        if rate < -2:
+            return Insight("outcome", f"Losing {abs(rate):.1f} lbs/wk — too fast. Add 100-150 cal to protect muscle.", 0.9)
+        if abs(rate) < 0.2:
+            return Insight("outcome", f"Weight flat since {since} on a cut. Drop ~150 cal or add a cardio session.", 0.8)
+        if rate > 0.3:
+            return Insight("outcome", f"Gaining on a cut ({rate:+.1f} lbs/wk). Recheck logged portions.", 0.85)
+        return Insight("outcome", f"Down {abs(change):.1f} lbs since {since}. Cut is working.", 0.35)
+    if goal == "lean muscle":
+        if rate > 1:
+            return Insight("outcome", f"Up {rate:.1f} lbs/wk — likely more fat than needed. Pull back ~100 cal.", 0.7)
+        if abs(rate) < 0.2:
+            return Insight("outcome", f"Not gaining since {since}. Add ~200 cal, mostly carbs around workouts.", 0.75)
+        if rate > 0.25:
+            return Insight("outcome", f"Up {change:.1f} lbs since {since}. On pace for lean gains.", 0.35)
+        return None
+    if goal == "endurance":
+        if abs(rate) > 1.5:
+            return Insight("outcome", f"Weight swinging {rate:+.1f} lbs/wk. Stable fueling supports mileage.", 0.7)
+        return None
+    # balanced
+    if rate > 1:
+        return Insight("outcome", f"Up {rate:.1f} lbs/wk — faster than balanced. Tighten portions or add cardio.", 0.6)
+    if abs(rate) < 0.3:
+        return Insight("outcome", f"Weight steady since {since}. Maintenance is dialed in.", 0.3)
+    return None
+
+
+def _rule_workout_cadence(user):
+    days = _days_since_last_workout(user.id)
+    weekly = _workouts_last_7_days(user.id)
+    if days is None:
+        return Insight("behavior", "No workouts logged yet. A 20-min walk counts.", 0.6)
+    if days < 3:
+        return None
+    return Insight(
+        category="behavior",
+        severity=min(days / 7, 1.0),
+        message=f"{days} days since last workout. Weekly total: {weekly}. Even 20 min keeps the habit.",
+    )
+
+
+def _rule_weekend_gap(user):
+    split = _weekday_weekend_avg(user.id)
+    if not split:
+        return None
+    wd, we = split
+    if we - wd < 400:
+        return None
+    return Insight(
+        category="pattern",
+        severity=min((we - wd) / 1000, 1.0),
+        message=f"Weekdays avg {wd:.0f} cal, weekends {we:.0f}. The deficit leaks on Sat/Sun.",
+    )
+
+
+def _rule_streak(user, tdee):
+    streak = _calorie_streak(user, tdee["target"])
+    if streak < 5:
+        return None
+    return Insight(
+        category="streak",
+        severity=0.5,
+        message=f"{streak}-day streak under target. Weight's tracking with it.",
+    )
+
+
+# --- Orchestrator ------------------------------------------------------
+
+def generate_recommendation(user):
     tdee = estimate_tdee(user)
-    target_calories = tdee["target"]
-    macros = average_recent_macros(user.id)
+    daily = get_daily_summary(user)
 
-    if macros:
-        low_protein_threshold = 20  # grams
-        high_calorie_margin = 0.05  # 5% over target considered high for cutting
+    candidates = [
+        _rule_calorie_gap_today(user, tdee, daily),
+        _rule_protein_shortfall(user),
+        _rule_weight_trend(user),
+        _rule_workout_cadence(user),
+        _rule_weekend_gap(user),
+        _rule_streak(user, tdee),
+    ]
+    insights = [c for c in candidates if c is not None]
 
-        # Case 1: Protein intake is critically low
-        if macros["protein"] < low_protein_threshold:
-            meal_opts += [
-                "Protein Smoothie with Whey + Greek Yogurt & Berries",
-                "Egg White Omelet with Avocado + Spinach",
-                "Chicken + Tofu Stir-Fry with Edamame and Quinoa",
-            ]
-            trend_note += " Protein intake is low — adding high-protein meals to support your goal."
+    skip_rates = _category_skip_rates(user.id)
+    for i in insights:
+        i.severity *= 1 - skip_rates.get(i.category, 0)
 
-        # Case 2: User is trying to cut but consuming more than target
-        if user.fitness_goal == "cutting" and macros["calories"] > target_calories * (
-            1 + high_calorie_margin
-        ):
-            meal_opts += [
-                "Low-Carb Salad with Lean Chicken + Olive Oil",
-                "Zucchini Noodles with Grilled Turkey & Pesto",
-                "Grilled Cod or Tilapia with Steamed Broccoli & Cauliflower Mash",
-            ]
-            trend_note += (
-                "Your average calorie intake is above your estimated needs. "
-                "Try lighter, lower-carb meals to stay in a deficit."
-            )
+    insights.sort(key=lambda x: x.severity, reverse=True)
 
-    # === Deduplication and Fallbacks ===
-    meal_opts = list(dict.fromkeys(meal_opts))
-    workout_opts = list(dict.fromkeys(workout_opts))
+    if not insights:
+        return (
+            "Log a few more meals and workouts to unlock personalised insights.",
+            "nudge",
+            "",
+        )
 
-    if not filtered_meals:
-        filtered_meals = meal_opts
-    if not filtered_workouts:
-        filtered_workouts = workout_opts
+    top = insights[0]
+    extra = ""
+    if len(insights) > 1 and insights[1].severity >= 0.5 and insights[1].category != top.category:
+        extra = insights[1].message
 
-    return choice(filtered_meals), choice(filtered_workouts), trend_note
+    return top.message, top.category, extra

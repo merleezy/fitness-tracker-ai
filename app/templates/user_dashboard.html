@@ -22,73 +22,82 @@ content %}
     </div>
   </div>
 
-  <!-- Recommendation Card -->
+  <!-- Insight Card -->
   <div class="col-md-8">
-    <div class="card border-success shadow-sm">
-      <div
-        class="card-header bg-success text-white d-flex justify-content-between align-items-center"
-      >
-        <span>Curated Recommendation</span>
+    {% set icon_map = {
+      'nutrition': 'bi-egg-fried',
+      'outcome':   'bi-graph-up-arrow',
+      'behavior':  'bi-activity',
+      'pattern':   'bi-calendar-week',
+      'streak':    'bi-fire',
+      'nudge':     'bi-chat-dots'
+    } %}
+    {% set accent_map = {
+      'nutrition': 'primary',
+      'outcome':   'warning',
+      'behavior':  'info',
+      'pattern':   'secondary',
+      'streak':    'danger',
+      'nudge':     'secondary'
+    } %}
+    {% set category = (recommendation.workout_rec if recommendation else '') or 'nudge' %}
+    {% set icon = icon_map.get(category, 'bi-lightbulb') %}
+    {% set accent = accent_map.get(category, 'success') %}
+
+    <div class="card border-success shadow-sm h-100">
+      <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-lightbulb-fill me-2"></i>Today's Insight</span>
         {% if recommendation %}
-        <span class="badge bg-light text-dark"
-          >Status: {% if recommendation.followed %}<strong
-            >{{ recommendation.followed.capitalize() }}</strong
-          >{% else %}<em>Not marked</em>{% endif %}</span
-        >
+        <span class="badge bg-light text-dark">
+          {% if recommendation.followed %}{{ recommendation.followed.capitalize() }}{% else %}New{% endif %}
+        </span>
         {% endif %}
       </div>
       <div class="card-body">
         {% if recommendation %}
-        <div class="mb-3">
-          <p class="mb-1"><strong>Meal Recommendation:</strong></p>
-          <p class="ms-3">{{ recommendation.meal_rec }}</p>
-          <p class="mb-1"><strong>Workout Recommendation:</strong></p>
-          <p class="ms-3">{{ recommendation.workout_rec }}</p>
+        <div class="d-flex align-items-start mb-3">
+          <i class="bi {{ icon }} text-{{ accent }} me-3" style="font-size: 1.75rem;"></i>
+          <div class="flex-grow-1">
+            <span class="badge bg-{{ accent }} mb-2 text-uppercase">{{ category }}</span>
+            <p class="mb-1 fw-semibold">{{ recommendation.meal_rec }}</p>
+            {% if recommendation.trend_note %}
+            <p class="mb-0 text-muted small">{{ recommendation.trend_note }}</p>
+            {% endif %}
+          </div>
         </div>
 
-        {% if recommendation.trend_note %}
-        <div class="alert alert-warning">
-          <strong>Note:</strong> {{ recommendation.trend_note }}
-        </div>
-        {% endif %}
-
-        <p class="text-muted small">
-          Generated: {{ recommendation.timestamp.strftime('%b %d, %Y %I:%M:%S
-          %p') }}
+        <p class="text-muted small mb-3">
+          Generated {{ recommendation.timestamp.strftime('%b %d, %Y %I:%M %p') }}
         </p>
 
-        <div class="d-flex flex-wrap gap-2 mb-3">
-          <form
-            action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='followed') }}"
-            method="post"
-          >
+        <div class="d-flex flex-wrap gap-2">
+          <form action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='followed') }}" method="post">
             <button type="submit" class="btn btn-outline-success btn-sm">
-              Followed
+              <i class="bi bi-check2 me-1"></i>Followed
             </button>
           </form>
-          <form
-            action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='skipped') }}"
-            method="post"
-          >
+          <form action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='skipped') }}" method="post">
             <button type="submit" class="btn btn-outline-danger btn-sm">
-              Skipped
+              <i class="bi bi-x-lg me-1"></i>Skipped
             </button>
           </form>
-          <a
-            href="{{ url_for('recommendation_history') }}"
-            class="btn btn-sm btn-outline-info"
-            >View Recommendation History</a
-          >
+          <form action="{{ url_for('create_recommendation') }}" method="post">
+            <button type="submit" class="btn btn-outline-success btn-sm">
+              <i class="bi bi-arrow-repeat me-1"></i>New Insight
+            </button>
+          </form>
+          <a href="{{ url_for('recommendation_history') }}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-clock-history me-1"></i>History
+          </a>
         </div>
         {% else %}
-        <p>No recommendations yet.</p>
-        {% endif %}
-
+        <p class="text-muted">No insights yet.</p>
         <form action="{{ url_for('create_recommendation') }}" method="post">
           <button type="submit" class="btn btn-outline-success w-100">
-            Generate New Recommendation
+            Generate Insight
           </button>
         </form>
+        {% endif %}
       </div>
     </div>
   </div>
