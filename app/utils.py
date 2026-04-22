@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
 from app import db
-from app.models import Meal, Recommendation, WeightLog, Workout
+from app.models import Meal, WeightLog, Workout
 import requests
 
 API_KEY = os.environ.get("USDA_API_KEY")
@@ -34,29 +34,95 @@ def analyze_weight_trend(user_id):
     }
 
 
+def _format_portion_label(portion):
+    amount = portion.get("amount")
+    measure = (portion.get("measureUnit") or {}).get("name")
+    modifier = portion.get("modifier")
+    parts = []
+    if amount:
+        parts.append(str(int(amount)) if amount == int(amount) else f"{amount:g}")
+    if measure and measure not in ("undetermined", ""):
+        parts.append(measure)
+    if modifier:
+        parts.append(modifier)
+    return " ".join(parts).strip()
+
+
 def search_usda_food(query, max_results=5):
     url = "https://api.nal.usda.gov/fdc/v1/foods/search"
-    params = {"api_key": API_KEY, "query": query, "pageSize": max_results}
+    params = {
+        "api_key": API_KEY,
+        "query": query,
+        "pageSize": max_results,
+    }
 
     response = requests.get(url, params=params)
     data = response.json()
 
     results = []
     for item in data.get("foods", []):
-        food_name = item["description"]
+        full_name = item.get("description", "")
+        short_name = ", ".join(full_name.split(",")[:2]).strip()
         nutrients = {
             n["nutrientName"]: n["value"] for n in item.get("foodNutrients", [])
         }
-        macros = {
-            "name": food_name,
-            "calories": nutrients.get("Energy", 0),
-            "protein": nutrients.get("Protein", 0),
-            "carbs": nutrients.get("Carbohydrate, by difference", 0),
-            "fat": nutrients.get("Total lipid (fat)", 0),
-        }
-        results.append(macros)
+        portions = []
+        for p in item.get("foodPortions", []):
+            grams = p.get("gramWeight")
+            if not grams:
+                continue
+            label = _format_portion_label(p) or f"{grams:g}g"
+            portions.append({"label": label, "grams": round(grams, 1)})
+        # Deduplicate by (label, grams) keeping first-seen order
+        seen = set()
+        deduped = []
+        for p in portions:
+            key = (p["label"], p["grams"])
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(p)
+        results.append(
+            {
+                "fdc_id": item.get("fdcId"),
+                "name": short_name or full_name,
+                "full_name": full_name,
+                "calories": nutrients.get("Energy", 0),
+                "protein": nutrients.get("Protein", 0),
+                "carbs": nutrients.get("Carbohydrate, by difference", 0),
+                "fat": nutrients.get("Total lipid (fat)", 0),
+                "portions": deduped,
+            }
+        )
 
     return results
+
+
+def get_food_portions(fdc_id):
+    """Fetch foodPortions from the USDA detail endpoint for a single food."""
+    url = f"https://api.nal.usda.gov/fdc/v1/food/{fdc_id}"
+    try:
+        resp = requests.get(url, params={"api_key": API_KEY}, timeout=5)
+        if not resp.ok:
+            return []
+        data = resp.json()
+    except Exception:
+        return []
+    portions = []
+    for p in data.get("foodPortions", []):
+        grams = p.get("gramWeight")
+        if not grams:
+            continue
+        label = _format_portion_label(p) or f"{grams:g}g"
+        portions.append({"label": label, "grams": round(grams, 1)})
+    seen = set()
+    deduped = []
+    for p in portions:
+        key = (p["label"], p["grams"])
+        if key not in seen:
+            seen.add(key)
+            deduped.append(p)
+    return deduped
 
 
 def estimate_tdee(user):
@@ -225,27 +291,6 @@ def _calorie_streak(user, target):
     return streak
 
 
-def _category_skip_rates(user_id):
-    recs = (
-        Recommendation.query.filter(
-            Recommendation.user_id == user_id,
-            Recommendation.followed.is_not(None),
-        )
-        .order_by(Recommendation.timestamp.desc())
-        .limit(20)
-        .all()
-    )
-    by_cat = {}
-    for r in recs:
-        cat = r.workout_rec or ""
-        by_cat.setdefault(cat, []).append(r.followed)
-    return {
-        cat: sum(1 for s in xs if s == "skipped") / len(xs)
-        for cat, xs in by_cat.items()
-        if len(xs) >= 3
-    }
-
-
 # --- Rules -------------------------------------------------------------
 
 def _rule_calorie_gap_today(user, tdee, daily):
@@ -266,7 +311,6 @@ def _rule_calorie_gap_today(user, tdee, daily):
         ),
     )
 
-
 def _rule_protein_shortfall(user):
     avg, _, _, _ = calculate_progress_stats(user)
     if not avg:
@@ -284,7 +328,6 @@ def _rule_protein_shortfall(user):
             "Front-load it at breakfast."
         ),
     )
-
 
 def _rule_weight_trend(user):
     trend = analyze_weight_trend(user.id)
@@ -322,7 +365,6 @@ def _rule_weight_trend(user):
         return Insight("outcome", f"Weight steady since {since}. Maintenance is dialed in.", 0.3)
     return None
 
-
 def _rule_workout_cadence(user):
     days = _days_since_last_workout(user.id)
     weekly = _workouts_last_7_days(user.id)
@@ -335,7 +377,6 @@ def _rule_workout_cadence(user):
         severity=min(days / 7, 1.0),
         message=f"{days} days since last workout. Weekly total: {weekly}. Even 20 min keeps the habit.",
     )
-
 
 def _rule_weekend_gap(user):
     split = _weekday_weekend_avg(user.id)
@@ -350,7 +391,6 @@ def _rule_weekend_gap(user):
         message=f"Weekdays avg {wd:.0f} cal, weekends {we:.0f}. The deficit leaks on Sat/Sun.",
     )
 
-
 def _rule_streak(user, tdee):
     streak = _calorie_streak(user, tdee["target"])
     if streak < 5:
@@ -361,10 +401,28 @@ def _rule_streak(user, tdee):
         message=f"{streak}-day streak under target. Weight's tracking with it.",
     )
 
-
 # --- Orchestrator ------------------------------------------------------
 
-def generate_recommendation(user):
+def _unlock_hints(user, daily):
+    hints = []
+    if daily["count"] == 0:
+        hints.append("Log a meal today to unlock nutrition insights.")
+    weight_count = WeightLog.query.filter_by(user_id=user.id).count()
+    if weight_count < 2:
+        hints.append("Log your weight a couple of times to unlock trend insights.")
+    cutoff = datetime.now(timezone.utc) - timedelta(days=14)
+    meal_days = (
+        db.session.query(func.count(func.distinct(func.date(Meal.date))))
+        .filter(Meal.user_id == user.id, Meal.date >= cutoff)
+        .scalar()
+        or 0
+    )
+    if meal_days < 7:
+        hints.append("Log meals across more days to unlock pattern insights.")
+    return hints
+
+def compute_insights(user, limit=3):
+    """Return (ranked_insights, unlock_hints)."""
     tdee = estimate_tdee(user)
     daily = get_daily_summary(user)
 
@@ -377,23 +435,19 @@ def generate_recommendation(user):
         _rule_streak(user, tdee),
     ]
     insights = [c for c in candidates if c is not None]
-
-    skip_rates = _category_skip_rates(user.id)
-    for i in insights:
-        i.severity *= 1 - skip_rates.get(i.category, 0)
-
     insights.sort(key=lambda x: x.severity, reverse=True)
+    return insights[:limit], _unlock_hints(user, daily)
 
+def generate_recommendation(user):
+    insights, _ = compute_insights(user, limit=2)
     if not insights:
         return (
             "Log a few more meals and workouts to unlock personalised insights.",
             "nudge",
             "",
         )
-
     top = insights[0]
     extra = ""
-    if len(insights) > 1 and insights[1].severity >= 0.5 and insights[1].category != top.category:
+    if len(insights) > 1 and insights[1].category != top.category:
         extra = insights[1].message
-
     return top.message, top.category, extra

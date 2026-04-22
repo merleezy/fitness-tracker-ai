@@ -1,27 +1,31 @@
-{% extends "base.html" %} {% block title %}Previous Workouts{% endblock %} {%
-block content %}
+{% extends "base.html" %} {% block title %}Previous Workouts{% endblock %} {% block content %}
 
-<h1 class="mb-4">Previous Workouts</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">Previous Workouts</h1>
+  <a class="btn btn-outline-primary" href="{{ url_for('log_workout') }}">
+    <i class="bi bi-plus-lg me-1"></i>Log New Workout
+  </a>
+</div>
 
 {% if workouts %}
-<div class="card p-4 shadow-sm">
+<div class="card shadow-sm">
   <div class="table-responsive">
-    <table class="table table-striped align-middle">
+    <table class="table table-striped align-middle mb-0">
       <thead>
         <tr>
           <th>Date</th>
           <th>Type</th>
-          <th>Duration (min)</th>
-          <th>Calories Burned</th>
+          <th class="text-end">Duration</th>
+          <th class="text-end">Calories</th>
         </tr>
       </thead>
       <tbody>
         {% for w in workouts %}
         <tr>
-          <td>{{ w.date.strftime('%b %d, %Y') if w.date else "N/A" }}</td>
-          <td>{{ w.type }}</td>
-          <td>{{ w.duration }}</td>
-          <td>{{ w.calories_burned }}</td>
+          <td class="text-nowrap">{{ w.date.strftime('%b %d, %Y') if w.date else "N/A" }}</td>
+          <td class="fw-semibold">{{ w.type }}</td>
+          <td class="text-end text-muted">{{ w.duration }} min</td>
+          <td class="text-end text-muted">{{ w.calories_burned }} cal</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -29,11 +33,17 @@ block content %}
   </div>
 </div>
 {% else %}
-<p class="text-muted">No workouts logged yet.</p>
+<div class="card shadow-sm">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-activity text-muted mb-2" style="font-size: 2rem;"></i>
+    <p class="text-muted mb-3">No workouts logged yet.</p>
+    <a class="btn btn-primary" href="{{ url_for('log_workout') }}">
+      <i class="bi bi-plus-lg me-1"></i>Log your first workout
+    </a>
+  </div>
+</div>
 {% endif %}
 
-<a class="btn btn-outline-secondary mt-4" href="{{ url_for('log_workout') }}"
-  >Log a Workout</a
->
+<a class="btn btn-outline-secondary mt-4" href="{{ url_for('user_dashboard') }}">Back to Dashboard</a>
 
 {% endblock %}

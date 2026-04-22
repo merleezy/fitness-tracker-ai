@@ -17,41 +17,46 @@
             {{ form.meal_type(class="form-select") }}
           </div>
 
+          <!-- Food search -->
           <div class="mb-3">
             {{ form.name.label(class="form-label") }}
             <div class="input-group">
-              {{ form.name(class="form-control", id="food-name", autocomplete="off", placeholder="e.g. Chicken breast", oninput="autoSuggest()") }}
-              <button type="button" class="btn btn-outline-secondary" onclick="searchFood()">Search</button>
+              {{ form.name(class="form-control", id="food-name", list="food-suggestions", autocomplete="off", placeholder="e.g. Chicken breast", oninput="autoSuggest()") }}
+              <button type="button" class="btn btn-outline-secondary" onclick="searchFood()">
+                <i class="bi bi-search me-1"></i>Search
+              </button>
             </div>
             <datalist id="food-suggestions"></datalist>
             <small id="search-status" class="form-text text-muted"></small>
           </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-6">
-              <label for="amount" class="form-label">Amount</label>
-              <input type="number" id="amount" name="amount" value="100" class="form-control" oninput="scaleNutrition()">
-            </div>
-            <div class="col-6">
-              <label for="unit" class="form-label">Unit</label>
-              <select id="unit" name="unit" class="form-select" onchange="scaleNutrition()">
-                <option value="grams" selected>grams (g)</option>
-                <option value="ounces">ounces (oz)</option>
-                <option value="pounds">pounds (lb)</option>
-              </select>
+          <!-- Serving chips: shown after USDA search, hidden otherwise -->
+          <div id="serving-chips-wrap" class="mb-3 d-none">
+            <label class="form-label mb-1">Pick a serving size</label>
+            <div id="portion-chips" class="d-flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- Servings multiplier: always visible -->
+          <div class="mb-3">
+            <label for="servings" class="form-label">Servings</label>
+            <input type="number" id="servings" value="1" min="0.25" step="0.25"
+                   class="form-control" style="max-width: 120px;" oninput="onServingsChange()">
+            <div class="form-text" id="servings-hint">
+              Change servings to scale macros up or down.
             </div>
           </div>
 
+          <!-- Macro fields -->
           <div class="row g-3">
             <div class="col-6">
               {{ form.calories.label(class="form-label") }}
-              {{ form.calories(id="calories", class="form-control", placeholder="0") }}
+              {{ form.calories(id="calories", class="form-control", placeholder="0", onblur="captureBase()") }}
               {% for e in form.calories.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
             </div>
             <div class="col-6">
               {{ form.protein.label(class="form-label") }}
               <div class="input-group">
-                {{ form.protein(id="protein", class="form-control", placeholder="0") }}
+                {{ form.protein(id="protein", class="form-control", placeholder="0", onblur="captureBase()") }}
                 <span class="input-group-text">g</span>
               </div>
               {% for e in form.protein.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
@@ -59,7 +64,7 @@
             <div class="col-6">
               {{ form.carbs.label(class="form-label") }}
               <div class="input-group">
-                {{ form.carbs(id="carbs", class="form-control", placeholder="0") }}
+                {{ form.carbs(id="carbs", class="form-control", placeholder="0", onblur="captureBase()") }}
                 <span class="input-group-text">g</span>
               </div>
               {% for e in form.carbs.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
@@ -67,7 +72,7 @@
             <div class="col-6">
               {{ form.fats.label(class="form-label") }}
               <div class="input-group">
-                {{ form.fats(id="fats", class="form-control", placeholder="0") }}
+                {{ form.fats(id="fats", class="form-control", placeholder="0", onblur="captureBase()") }}
                 <span class="input-group-text">g</span>
               </div>
               {% for e in form.fats.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
@@ -85,11 +90,19 @@
 </div>
 
 <script>
+  // baseMacros holds per-1-serving values.
+  // Null means user hasn't loaded or typed anything yet.
+  window.baseMacros = null;
+  // Per-100g baseline from USDA (needed for chip selection)
+  window.usda100g = null;
+
+  // ---- USDA Search ----
+
   function searchFood() {
     const query = document.getElementById("food-name").value;
     const status = document.getElementById("search-status");
-    if (!query.trim()) { status.textContent = "Please enter a food name."; return; }
-    status.textContent = "Searching...";
+    if (!query.trim()) { status.textContent = "Enter a food name first."; return; }
+    status.textContent = "Searching…";
     fetch("/search_food", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -99,52 +112,137 @@
     .then(data => {
       if (data.error) {
         status.textContent = data.error;
+        return;
+      }
+      window.usda100g = data;
+      document.getElementById("food-name").value = data.name;
+      renderChips(data.portions || []);
+      document.getElementById("serving-chips-wrap").classList.remove("d-none");
+      // Auto-select first portion, or fall back to 100g
+      if (data.portions && data.portions.length) {
+        pickChip(data.portions[0], /*resetServings=*/true);
+        status.textContent = `Loaded: ${data.name}`;
       } else {
-        window.lastFoodData = data;
-        document.getElementById("amount").value = 100;
-        scaleNutrition();
-        document.getElementById("food-name").value = data.name;
-        status.textContent = `Auto-filled macros for: ${data.name}`;
+        // No portions — fill 100g baseline
+        setBaseFromUsda(100);
+        applyServings();
+        status.textContent = `Loaded: ${data.name} (no household portions — showing per 100 g)`;
       }
     })
-    .catch(() => { status.textContent = "Error retrieving food data."; });
+    .catch(() => { status.textContent = "Error fetching food data."; });
   }
 
-  function scaleNutrition() {
-    if (!window.lastFoodData) return;
-    const amount = parseFloat(document.getElementById("amount").value);
-    if (isNaN(amount)) return;
-    const factor = toGrams(amount, document.getElementById("unit").value) / 100.0;
-    document.getElementById("calories").value = round(window.lastFoodData.calories * factor);
-    document.getElementById("protein").value = round(window.lastFoodData.protein * factor, 1);
-    document.getElementById("carbs").value = round(window.lastFoodData.carbs * factor, 1);
-    document.getElementById("fats").value = round(window.lastFoodData.fat * factor, 1);
+  function renderChips(portions) {
+    const wrap = document.getElementById("portion-chips");
+    wrap.innerHTML = "";
+    if (!portions.length) {
+      wrap.innerHTML = '<span class="text-muted small">No household portions available.</span>';
+      return;
+    }
+    portions.forEach(p => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-sm btn-outline-primary";
+      btn.dataset.grams = p.grams;
+      btn.dataset.label = p.label;
+      btn.innerHTML = `${p.label} <span class="text-muted fw-normal">(${p.grams} g)</span>`;
+      btn.onclick = () => pickChip(p, /*resetServings=*/true);
+      wrap.appendChild(btn);
+    });
   }
 
+  function pickChip(portion, resetServings) {
+    if (resetServings) {
+      document.getElementById("servings").value = 1;
+    }
+    // Highlight active chip
+    document.querySelectorAll("#portion-chips button").forEach(b => {
+      const active = parseFloat(b.dataset.grams) === portion.grams && b.dataset.label === portion.label;
+      b.classList.toggle("btn-primary", active);
+      b.classList.toggle("btn-outline-primary", !active);
+    });
+    setBaseFromUsda(portion.grams);
+    applyServings();
+    updateServingsHint();
+  }
+
+  function setBaseFromUsda(grams) {
+    if (!window.usda100g) return;
+    const f = grams / 100.0;
+    window.baseMacros = {
+      calories: window.usda100g.calories * f,
+      protein:  window.usda100g.protein  * f,
+      carbs:    window.usda100g.carbs    * f,
+      fat:      window.usda100g.fat      * f,
+    };
+  }
+
+  // ---- Servings ----
+
+  function onServingsChange() {
+    if (window.baseMacros) {
+      applyServings();
+    }
+    updateServingsHint();
+  }
+
+  function applyServings() {
+    if (!window.baseMacros) return;
+    const s = parseFloat(document.getElementById("servings").value) || 1;
+    document.getElementById("calories").value = round(window.baseMacros.calories * s);
+    document.getElementById("protein").value  = round(window.baseMacros.protein  * s, 1);
+    document.getElementById("carbs").value    = round(window.baseMacros.carbs    * s, 1);
+    document.getElementById("fats").value     = round(window.baseMacros.fat      * s, 1);
+  }
+
+  function updateServingsHint() {
+    const s = parseFloat(document.getElementById("servings").value) || 1;
+    const hint = document.getElementById("servings-hint");
+    if (s === 1) {
+      hint.textContent = "Change servings to scale macros up or down.";
+    } else {
+      hint.textContent = `Scaling macros × ${s}.`;
+    }
+  }
+
+  // ---- Manual entry ----
+  // When the user directly edits a macro field, capture it as the new base
+  // (so changing servings afterwards still scales from what they typed).
+  function captureBase() {
+    const s = parseFloat(document.getElementById("servings").value) || 1;
+    window.baseMacros = {
+      calories: (parseFloat(document.getElementById("calories").value) || 0) / s,
+      protein:  (parseFloat(document.getElementById("protein").value)  || 0) / s,
+      carbs:    (parseFloat(document.getElementById("carbs").value)    || 0) / s,
+      fat:      (parseFloat(document.getElementById("fats").value)     || 0) / s,
+    };
+  }
+
+  // ---- Autocomplete ----
   function autoSuggest() {
     const input = document.getElementById("food-name");
-    const list = document.getElementById("food-suggestions");
+    const list  = document.getElementById("food-suggestions");
     fetch(`/autocomplete_food?q=${encodeURIComponent(input.value)}`)
       .then(res => res.json())
       .then(data => {
         list.innerHTML = "";
         data.forEach(item => {
-          const option = document.createElement("option");
-          option.value = item.label;
-          list.appendChild(option);
+          const opt = document.createElement("option");
+          opt.value = item.label;
+          list.appendChild(opt);
         });
       });
-  }
-
-  function toGrams(amount, unit) {
-    if (unit === "ounces") return amount * 28.3495;
-    if (unit === "pounds") return amount * 453.592;
-    return amount;
   }
 
   function round(num, digits = 0) {
     return +(Math.round(num + `e+${digits}`) + `e-${digits}`);
   }
+
+  // If form was pre-populated (re-log), set baseMacros so servings scaling works immediately.
+  document.addEventListener("DOMContentLoaded", () => {
+    const cal = parseFloat(document.getElementById("calories").value);
+    if (cal > 0) captureBase();
+  });
 </script>
 
 {% endblock %}

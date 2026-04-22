@@ -15,7 +15,9 @@ from app.forms import (
 from app.utils import (
     estimate_tdee,
     generate_recommendation,
+    compute_insights,
     search_usda_food,
+    get_food_portions,
     calculate_progress_stats,
     get_daily_summary,
     get_daily_calorie_history,
@@ -61,6 +63,7 @@ def user_dashboard():
     )
     daily_summary = get_daily_summary(user)
     tdee = estimate_tdee(user)
+    insights, unlock_hints = compute_insights(user, limit=3)
 
     return render_template(
         "user_dashboard.html",
@@ -68,6 +71,8 @@ def user_dashboard():
         workouts=workouts,
         meals=meals,
         recommendation=recommendation,
+        insights=insights,
+        unlock_hints=unlock_hints,
         daily_summary=daily_summary,
         tdee=tdee,
     )
@@ -281,39 +286,6 @@ def create_recommendation():
     )
 
 
-@app.route("/recommendations")
-@login_required
-def recommendation_history():
-    recommendations = (
-        Recommendation.query.filter_by(user_id=current_user.id)
-        .order_by(Recommendation.timestamp.desc())
-        .all()
-    )
-    return render_template(
-        "recommendation_history.html",
-        user=current_user,
-        recommendations=recommendations,
-    )
-
-
-@app.route("/recommendation_feedback/<int:rec_id>/<status>", methods=["POST"])
-@login_required
-def recommendation_feedback(rec_id, status):
-    recommendation = Recommendation.query.get_or_404(rec_id)
-
-    if recommendation.user_id != current_user.id:
-        flash("You are not authorized to modify this recommendation.", "danger")
-        return redirect(url_for("user_dashboard"))
-
-    if status not in ["followed", "skipped"]:
-        flash("Invalid feedback option.", "danger")
-        return redirect(url_for("user_dashboard"))
-
-    recommendation.followed = status
-    db.session.commit()
-    flash(f"Recommendation marked as {status}.", "success")
-    return redirect(url_for("user_dashboard"))
-
 
 @app.route("/search_food", methods=["POST"])
 def search_food():
@@ -323,9 +295,13 @@ def search_food():
         return jsonify({"error": "No query provided"}), 400
 
     results = search_usda_food(query)
-    if results:
-        return jsonify(results[0])  # return top match
-    return jsonify({"error": "No results found"}), 404
+    if not results:
+        return jsonify({"error": "No results found"}), 404
+
+    top = results[0]
+    if not top.get("portions") and top.get("fdc_id"):
+        top["portions"] = get_food_portions(top["fdc_id"])
+    return jsonify(top)
 
 
 @app.route("/autocomplete_food", methods=["GET"])

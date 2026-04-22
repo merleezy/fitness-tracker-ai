@@ -22,7 +22,7 @@ content %}
     </div>
   </div>
 
-  <!-- Insight Card -->
+  <!-- Insights Card -->
   <div class="col-md-8">
     {% set icon_map = {
       'nutrition': 'bi-egg-fried',
@@ -40,63 +40,60 @@ content %}
       'streak':    'danger',
       'nudge':     'secondary'
     } %}
-    {% set category = (recommendation.workout_rec if recommendation else '') or 'nudge' %}
-    {% set icon = icon_map.get(category, 'bi-lightbulb') %}
-    {% set accent = accent_map.get(category, 'success') %}
 
     <div class="card border-success shadow-sm h-100">
-      <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-lightbulb-fill me-2"></i>Today's Insight</span>
-        {% if recommendation %}
-        <span class="badge bg-light text-dark">
-          {% if recommendation.followed %}{{ recommendation.followed.capitalize() }}{% else %}New{% endif %}
-        </span>
-        {% endif %}
+      <div class="card-header bg-success text-white">
+        <span><i class="bi bi-lightbulb-fill me-2"></i>Your Insights</span>
       </div>
       <div class="card-body">
-        {% if recommendation %}
-        <div class="d-flex align-items-start mb-3">
-          <i class="bi {{ icon }} text-{{ accent }} me-3" style="font-size: 1.75rem;"></i>
-          <div class="flex-grow-1">
-            <span class="badge bg-{{ accent }} mb-2 text-uppercase">{{ category }}</span>
-            <p class="mb-1 fw-semibold">{{ recommendation.meal_rec }}</p>
-            {% if recommendation.trend_note %}
-            <p class="mb-0 text-muted small">{{ recommendation.trend_note }}</p>
-            {% endif %}
+        {% if insights %}
+          {% set top = insights[0] %}
+          {% set top_icon = icon_map.get(top.category, 'bi-lightbulb') %}
+          {% set top_accent = accent_map.get(top.category, 'success') %}
+
+          <!-- Primary insight -->
+          <div class="d-flex align-items-start mb-3">
+            <i class="bi {{ top_icon }} text-{{ top_accent }} me-3" style="font-size: 1.75rem;"></i>
+            <div class="flex-grow-1">
+              <span class="badge bg-{{ top_accent }} mb-2 text-uppercase">{{ top.category }}</span>
+              <p class="mb-0 fw-semibold">{{ top.message }}</p>
+            </div>
           </div>
-        </div>
 
-        <p class="text-muted small mb-3">
-          Generated {{ recommendation.timestamp.strftime('%b %d, %Y %I:%M %p') }}
-        </p>
+          <!-- Secondary insights -->
+          {% if insights|length > 1 %}
+          <ul class="list-group list-group-flush mb-3">
+            {% for ins in insights[1:] %}
+            {% set ic = icon_map.get(ins.category, 'bi-lightbulb') %}
+            {% set ac = accent_map.get(ins.category, 'success') %}
+            <li class="list-group-item px-0 d-flex align-items-start">
+              <i class="bi {{ ic }} text-{{ ac }} me-3 mt-1"></i>
+              <div>
+                <span class="badge bg-{{ ac }} me-2 text-uppercase small">{{ ins.category }}</span>
+                <span>{{ ins.message }}</span>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
 
-        <div class="d-flex flex-wrap gap-2">
-          <form action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='followed') }}" method="post">
-            <button type="submit" class="btn btn-outline-success btn-sm">
-              <i class="bi bi-check2 me-1"></i>Followed
-            </button>
-          </form>
-          <form action="{{ url_for('recommendation_feedback', rec_id=recommendation.id, status='skipped') }}" method="post">
-            <button type="submit" class="btn btn-outline-danger btn-sm">
-              <i class="bi bi-x-lg me-1"></i>Skipped
-            </button>
-          </form>
-          <form action="{{ url_for('create_recommendation') }}" method="post">
-            <button type="submit" class="btn btn-outline-success btn-sm">
-              <i class="bi bi-arrow-repeat me-1"></i>New Insight
-            </button>
-          </form>
-          <a href="{{ url_for('recommendation_history') }}" class="btn btn-outline-info btn-sm">
-            <i class="bi bi-clock-history me-1"></i>History
-          </a>
-        </div>
+          <p class="text-muted small mb-0 fst-italic">
+            <i class="bi bi-arrow-repeat me-1"></i>Updates live as you log meals, workouts, and weight.
+          </p>
         {% else %}
-        <p class="text-muted">No insights yet.</p>
-        <form action="{{ url_for('create_recommendation') }}" method="post">
-          <button type="submit" class="btn btn-outline-success w-100">
-            Generate Insight
-          </button>
-        </form>
+          <p class="text-muted mb-0">Not enough data yet — log meals, workouts, and your weight to unlock insights.</p>
+        {% endif %}
+
+        <!-- Unlock hints -->
+        {% if unlock_hints %}
+        <div class="mt-3 pt-3 border-top">
+          <p class="text-muted small mb-1"><i class="bi bi-unlock me-1"></i>Unlock more insights:</p>
+          <ul class="text-muted small mb-0 ps-4">
+            {% for h in unlock_hints %}
+            <li>{{ h }}</li>
+            {% endfor %}
+          </ul>
+        </div>
         {% endif %}
       </div>
     </div>
@@ -177,7 +174,10 @@ content %}
 <div class="row g-4 mt-4">
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header">Recent Workouts</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Recent Workouts</span>
+        <a href="{{ url_for('previous_workouts') }}" class="small text-decoration-none">View all</a>
+      </div>
       <div class="card-body">
         {% if workouts %}
         <ul class="list-group">
@@ -201,7 +201,10 @@ content %}
 
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header">Recent Meals</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Recent Meals</span>
+        <a href="{{ url_for('previous_meals') }}" class="small text-decoration-none">View all</a>
+      </div>
       <div class="card-body">
         {% if meals %}
         <ul class="list-group">
