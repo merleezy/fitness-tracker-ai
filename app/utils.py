@@ -312,7 +312,7 @@ def _rule_calorie_gap_today(user, tdee, daily):
     )
 
 def _rule_protein_shortfall(user):
-    avg, _, _, _ = calculate_progress_stats(user)
+    avg, _, _, _ = calculate_progress_stats(user) # avg should check avg of day, not per meal
     if not avg:
         return None
     weight_kg = (user.weight or 150) * 0.4536
