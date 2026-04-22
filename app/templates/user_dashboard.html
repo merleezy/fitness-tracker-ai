@@ -1,6 +1,13 @@
 {% extends "base.html" %} {% block title %}Dashboard{% endblock %} {% block
 content %}
 
+{% if session.get('is_demo') %}
+<div class="alert alert-info d-flex justify-content-between align-items-center mb-4 py-2">
+  <span><i class="bi bi-eye me-2"></i><strong>Demo account</strong> — data is pre-filled for illustration. Changes won't affect anyone.</span>
+  <a href="{{ url_for('demo_exit') }}" class="btn btn-sm btn-info">Create your own account</a>
+</div>
+{% endif %}
+
 <h1 class="mb-4">Welcome, {{ user.name }}!</h1>
 
 <div class="row g-4">

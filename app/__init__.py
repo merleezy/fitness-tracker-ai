@@ -9,3 +9,5 @@ login = LoginManager(app)
 login.login_view = "login"  # type: ignore
 
 from app import routes, models  # noqa: E402, F401
+from app.seed import register_commands
+register_commands(app)

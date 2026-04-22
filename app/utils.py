@@ -311,12 +311,37 @@ def _rule_calorie_gap_today(user, tdee, daily):
         ),
     )
 
+def _daily_avg_macros(user_id, days=7):
+    """Average daily macro totals over the last N days that had at least one meal logged."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    meals = Meal.query.filter(
+        Meal.user_id == user_id,
+        Meal.date >= cutoff,
+    ).all()
+    if not meals:
+        return None
+    by_day = {}
+    for m in meals:
+        day = _aware(m.date).date()
+        if day not in by_day:
+            by_day[day] = {"calories": 0, "protein": 0, "carbs": 0, "fats": 0}
+        by_day[day]["calories"] += m.calories or 0
+        by_day[day]["protein"]  += m.protein  or 0
+        by_day[day]["carbs"]    += m.carbs    or 0
+        by_day[day]["fats"]     += m.fats     or 0
+    n = len(by_day)
+    return {
+        k: round(sum(d[k] for d in by_day.values()) / n, 1)
+        for k in ("calories", "protein", "carbs", "fats")
+    }
+
+
 def _rule_protein_shortfall(user):
-    avg, _, _, _ = calculate_progress_stats(user) # avg should check avg of day, not per meal
+    avg = _daily_avg_macros(user.id)
     if not avg:
         return None
     weight_kg = (user.weight or 150) * 0.4536
-    target_p = weight_kg * 1.6
+    target_p = round(weight_kg * 1.6)
     if avg["protein"] >= target_p * 0.9:
         return None
     gap = target_p - avg["protein"]
@@ -324,7 +349,7 @@ def _rule_protein_shortfall(user):
         category="nutrition",
         severity=min(gap / target_p, 1.0),
         message=(
-            f"Protein averaging {avg['protein']:.0f}g, target {target_p:.0f}g. "
+            f"Protein averaging {avg['protein']:.0f}g/day, target {target_p}g. "
             "Front-load it at breakfast."
         ),
     )

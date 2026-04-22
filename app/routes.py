@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from flask import jsonify, request, redirect, url_for, render_template, flash, session
 from flask_login import current_user, login_user, logout_user, login_required
@@ -27,6 +28,30 @@ from app.utils import (
 @app.route("/")
 def home():
     return render_template("home.html")
+
+
+@app.route("/demo-login")
+def demo_login():
+    from app.seed import DEMO_USERNAME, DEMO_PASSWORD, seed_demo
+    user = User.query.filter_by(username=DEMO_USERNAME).first()
+    if not user:
+        seed_demo()
+        user = User.query.filter_by(username=DEMO_USERNAME).first()
+    if user and user.check_password(DEMO_PASSWORD):
+        login_user(user)
+        session["is_demo"] = True
+    return redirect(url_for("user_dashboard"))
+
+
+@app.route("/admin/seed-demo")
+def admin_seed_demo():
+    """Reseed the demo account. Protected by SEED_KEY env var."""
+    key = os.environ.get("SEED_KEY")
+    if not key or request.args.get("key") != key:
+        return "Unauthorized", 403
+    from app.seed import seed_demo
+    seed_demo()
+    return "Demo account reseeded.", 200
 
 
 @app.route("/dashboard")
@@ -179,6 +204,14 @@ def logout():
     logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for("home"))
+
+
+@app.route("/demo-exit")
+def demo_exit():
+    """Log out of the demo account and go to register."""
+    logout_user()
+    session.pop("is_demo", None)
+    return redirect(url_for("register"))
 
 
 @app.route("/log_meal", methods=["GET", "POST"])
