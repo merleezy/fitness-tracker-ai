@@ -14,7 +14,7 @@ A full-stack fitness tracking web app built with Flask and SQLAlchemy. Track mea
 - **Workout logging** with type, duration, and calories burned
 - **Weight tracking** with a 7-day rolling average trend line
 - **Progress analytics** — daily calorie history chart vs. TDEE target, 7-day macro breakdown, and weight trend
-- **Personalised TDEE** using Mifflin-St Jeor with activity level multipliers and goal-based calorie targets (deficit for cutting, surplus for muscle gain)
+- **Personalised TDEE** using activity level multipliers and goal-based calorie targets (deficit for cutting, surplus for muscle gain)
 - **Recommendations** — meal and workout suggestions informed by weight trend, macro intake, and fitness goal
 - **Secure auth** — Flask-Login, Flask-WTF CSRF protection, scrypt password hashing
 
