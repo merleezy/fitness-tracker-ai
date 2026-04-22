@@ -1,6 +1,6 @@
 # Smart Fitness Tracker
 
-A full-stack fitness tracking web app built with Flask and SQLAlchemy. Track meals and macros, log workouts, monitor your weight, and get recommendations tailored to your fitness goal.
+Flask app for tracking meals, workouts, and weight — with live coaching insights based on your actual data.
 
 **Live demo:** https://smart-fitness-tracker-production-8d95.up.railway.app/
 
@@ -8,65 +8,38 @@ A full-stack fitness tracking web app built with Flask and SQLAlchemy. Track mea
 
 ## Features
 
-- **Two-step registration** with fitness profile setup (goal, activity level, biological sex) for accurate calorie targets
-- **Daily nutrition summary** on the dashboard — calories, protein, carbs, and fat tracked against your personalised TDEE target
-- **Meal logging** with meal type grouping (Breakfast / Lunch / Dinner / Snack), USDA FoodData search, and macro auto-fill
-- **Workout logging** with type, duration, and calories burned
-- **Weight tracking** with a 7-day rolling average trend line
-- **Progress analytics** — daily calorie history chart vs. TDEE target, 7-day macro breakdown, and weight trend
-- **Personalised TDEE** using activity level multipliers and goal-based calorie targets (deficit for cutting, surplus for muscle gain)
-- **Recommendations** — meal and workout suggestions informed by weight trend, macro intake, and fitness goal
-- **Secure auth** — Flask-Login, Flask-WTF CSRF protection, scrypt password hashing
+- **Meal logging** — USDA food search with household serving picker, macro auto-fill, re-log from history
+- **Workout logging** — type, duration, and calories burned with full history
+- **Weight tracking** — trend analysis with weekly rate of change
+- **Daily nutrition summary** — calories, protein, carbs, and fat vs. your TDEE target
+- **Progress analytics** — calorie history chart, 7-day macro breakdown, weight trend
+- **Insight engine** — data-driven coaching tips computed from logged data: protein gaps, stalled cuts, workout cadence, weekend calorie patterns
+- **Personalised TDEE** — Mifflin-St Jeor BMR with activity multipliers and goal-based targets
+- **Secure auth** — Flask-Login, CSRF protection, scrypt hashing
 
-## Tech Stack
+## Stack
 
-- **Backend:** Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF
-- **Database:** SQLite (local), PostgreSQL (production via Railway)
-- **Frontend:** Jinja2 templates, Bootstrap 5, Chart.js
+- **Backend:** Flask, SQLAlchemy, Flask-Login, Flask-WTF
+- **Database:** SQLite (local) · PostgreSQL (production via Railway)
+- **Frontend:** Jinja2, Bootstrap 5, Chart.js
 - **APIs:** USDA FoodData Central
 
-## Local Development
-
-### 1. Clone the repository
+## Setup
 
 ```bash
 git clone https://github.com/merleezy/smart-fitness-tracker
 cd smart-fitness-tracker
-```
-
-### 2. Create and activate a virtual environment
-
-```bash
-python -m venv venv
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # macOS / Linux
-```
-
-### 3. Install dependencies
-
-```bash
+python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### 4. Set up environment variables
-
-Copy the example file and fill in your values:
-
-```bash
-cp .env.example .env
+cp .env.example .env  # fill in values below
+python run.py
 ```
 
 | Variable | Description |
 |---|---|
-| `SECRET_KEY` | A long random string — generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
-| `USDA_API_KEY` | Free API key from [FoodData Central](https://fdc.nal.usda.gov/api-guide.html) |
-| `DATABASE_URL` | Leave as `sqlite:///app.db` for local development |
-| `FLASK_ENV` | Set to `development` locally |
+| `SECRET_KEY` | Random string — `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `USDA_API_KEY` | Free key from [FoodData Central](https://fdc.nal.usda.gov/api-guide.html) |
+| `DATABASE_URL` | `sqlite:///app.db` for local dev |
+| `SEED_KEY` | Any secret string — enables `/admin/seed-demo?key=<SEED_KEY>` |
 
-### 5. Run the app
-
-```bash
-python run.py
-```
-
-The database is created automatically on first run. Visit **http://127.0.0.1:5000**.
+Visit **http://127.0.0.1:5000**. Database is created on first run.
