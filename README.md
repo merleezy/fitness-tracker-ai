@@ -2,7 +2,7 @@
 
 Flask app for tracking meals, workouts, and weight — with live coaching insights based on your actual data.
 
-**Live demo:** https://smart-fitness-tracker-production-8d95.up.railway.app/
+**Live demo:** https://smart-fitness-tracker-jc7l.onrender.com/
 
 ![Landing Page](./docs/demo.png)
 
